@@ -1,1 +1,1 @@
-# apply-det-and-pose-estim-models-to-project
+# Apply Detection and Pose Estimation Models to Images Project
