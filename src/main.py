@@ -58,7 +58,6 @@ update_globals(dataset_ids)
 app_root_directory = str(Path(__file__).parent.absolute().parents[0])
 sly.logger.info(f"App root directory: {app_root_directory}")
 app_data_dir = os.path.join(app_root_directory, "tempfiles")
-project_dir = os.path.join(app_data_dir, "project_dir")
 output_project_dir = os.path.join(app_data_dir, "output_project_dir")
 det_model_data = {}
 pose_model_data = {}
@@ -94,7 +93,10 @@ card_connect_det_model = Card(
     description="Select served detection model from list below",
     content=connect_det_model_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_connect_det_model.collapse()
+card_connect_det_model.lock()
 
 
 ### 3. Detection model classes
@@ -123,7 +125,10 @@ card_det_model_classes = Card(
     description="Choose classes that will be kept after prediction, other classes will be ignored",
     content=det_model_classes_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_det_model_classes.collapse()
+card_det_model_classes.lock()
 
 
 ### 4. Detection settings
@@ -154,7 +159,10 @@ card_det_settings = Card(
     title="Detection Settings",
     content=det_settings_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_det_settings.collapse()
+card_det_settings.lock()
 
 
 ### 5. Connect to pose estimation model
@@ -182,7 +190,10 @@ card_connect_pose_model = Card(
     description="Select served pose estimation model from list below",
     content=connect_pose_model_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_connect_pose_model.collapse()
+card_connect_pose_model.lock()
 
 
 ### 6. Pose estimation settings
@@ -216,7 +227,11 @@ card_pose_settings = Card(
     title="Pose Estimation Settings",
     content=pose_settings_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_pose_settings.collapse()
+card_pose_settings.lock()
+
 
 ### 7. Output project
 output_project_name_input = Input(value="Labeled project")
@@ -241,7 +256,10 @@ card_output_project = Card(
     description="Start labeling by detection and pose estimation models",
     content=output_project_content,
     collapsable=True,
+    lock_message="Complete the previous step to unlock",
 )
+card_output_project.collapse()
+card_output_project.lock()
 
 
 app = sly.Application(
@@ -264,6 +282,8 @@ def on_dataset_selected(new_dataset_ids):
     update_globals(new_dataset_ids)
     if project_info is not None:
         output_project_name_input.set_value(value=project_info.name + " Labeled")
+    card_connect_det_model.unlock()
+    card_connect_det_model.uncollapse()
 
 
 @connect_det_model_button.click
@@ -285,6 +305,8 @@ def connect_to_det_model():
         det_model_data["det_model_meta"] = sly.ProjectMeta.from_json(det_model_meta_json)
         det_model_data["det_session_id"] = det_session_id
         det_classes_table.read_meta(det_model_data["det_model_meta"])
+        card_det_model_classes.unlock()
+        card_det_model_classes.uncollapse()
 
 
 @change_det_model_button.click
@@ -293,6 +315,8 @@ def change_det_model():
     det_model_stats.hide()
     change_det_model_button.hide()
     connect_det_model_button.show()
+    card_det_model_classes.lock()
+    card_det_model_classes.collapse()
 
 
 @det_classes_table.value_changed
@@ -322,6 +346,8 @@ def select_det_classes():
     det_classes_to_delete = [cls for cls in det_classes_collection if cls not in det_model_data["det_model_classes"]]
     det_model_data["det_model_meta"] = det_model_data["det_model_meta"].delete_obj_classes(det_classes_to_delete)
     sly.logger.info(f"Updated detection model meta: {str(det_model_data['det_model_meta'].to_json())}")
+    card_det_settings.unlock()
+    card_det_settings.uncollapse()
 
 
 @select_other_det_classes_button.click
@@ -329,6 +355,8 @@ def select_other_det_classes():
     det_classes_table.clear_selection()
     select_other_det_classes_button.hide()
     det_classes_done.hide()
+    card_det_settings.lock()
+    card_det_settings.collapse()
 
 
 @save_det_settings_button.click
@@ -340,6 +368,8 @@ def save_det_settings():
     save_det_settings_button.hide()
     reselect_det_settings_button.show()
     det_settings_done.show()
+    card_connect_pose_model.unlock()
+    card_connect_pose_model.uncollapse()
 
 
 @reselect_det_settings_button.click
@@ -347,6 +377,8 @@ def reselect_det_settings():
     save_det_settings_button.show()
     det_settings_done.hide()
     reselect_det_settings_button.hide()
+    card_connect_pose_model.lock()
+    card_connect_pose_model.collapse()
 
 
 @connect_pose_model_button.click
@@ -368,6 +400,8 @@ def connect_to_pose_model():
         pose_model_data["pose_model_meta"] = sly.ProjectMeta.from_json(pose_model_meta_json)
         pose_model_data["pose_session_id"] = pose_session_id
         pose_classes_table.read_meta(pose_model_data["pose_model_meta"])
+        card_pose_settings.unlock()
+        card_pose_settings.uncollapse()
 
 
 @change_pose_model_button.click
@@ -376,6 +410,8 @@ def change_pose_model():
     pose_model_stats.hide()
     change_pose_model_button.hide()
     connect_pose_model_button.show()
+    card_pose_settings.lock()
+    card_pose_settings.collapse()
 
 
 @pose_classes_table.value_changed
@@ -399,6 +435,8 @@ def save_pose_settings():
     ]
     pose_model_data["pose_model_meta"] = pose_model_data["pose_model_meta"].delete_obj_classes(pose_classes_to_delete)
     sly.logger.info(f"Updated pose estimation model meta: {str(pose_model_data['pose_model_meta'].to_json())}")
+    card_output_project.unlock()
+    card_output_project.uncollapse()
 
 
 @reselect_pose_settings_button.click
@@ -407,6 +445,8 @@ def reselect_pose_settings():
     save_pose_settings_button.show()
     pose_settings_done.hide()
     reselect_pose_settings_button.hide()
+    card_output_project.lock()
+    card_output_project.collapse()
 
 
 @apply_models_to_project_button.click
