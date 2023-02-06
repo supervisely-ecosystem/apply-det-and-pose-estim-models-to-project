@@ -13,7 +13,8 @@ from supervisely.app.widgets import (
     Field,
     Progress,
     SelectDataset,
-    ModelStats,
+    Text,
+    ModelInfo,
     ClassesTable,
     DoneLabel,
     ProjectThumbnail,
@@ -76,7 +77,9 @@ connect_det_model_button = Button(
 )
 connect_det_model_done = DoneLabel("Detection model connected")
 connect_det_model_done.hide()
-det_model_stats = ModelStats()
+det_model_stats_text = Text("Model Info")
+det_model_stats_text.hide()
+det_model_stats = ModelInfo()
 change_det_model_button = Button(
     '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>change detection model',
     button_type="warning",
@@ -85,7 +88,14 @@ change_det_model_button = Button(
 )
 change_det_model_button.hide()
 connect_det_model_content = Container(
-    [select_det_model, connect_det_model_button, connect_det_model_done, det_model_stats, change_det_model_button]
+    [
+        select_det_model,
+        connect_det_model_button,
+        connect_det_model_done,
+        det_model_stats_text,
+        det_model_stats,
+        change_det_model_button,
+    ]
 )
 card_connect_det_model = Card(
     title="Connect to Detection Model",
@@ -173,7 +183,9 @@ connect_pose_model_button = Button(
 )
 connect_pose_model_done = DoneLabel("Pose estimation model connected")
 connect_pose_model_done.hide()
-pose_model_stats = ModelStats()
+pose_model_stats_text = Text("Model Info")
+pose_model_stats_text.hide()
+pose_model_stats = ModelInfo()
 change_pose_model_button = Button(
     '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>change pose estimation model',
     button_type="warning",
@@ -182,7 +194,14 @@ change_pose_model_button = Button(
 )
 change_pose_model_button.hide()
 connect_pose_model_content = Container(
-    [select_pose_model, connect_pose_model_button, connect_pose_model_done, pose_model_stats, change_pose_model_button]
+    [
+        select_pose_model,
+        connect_pose_model_button,
+        connect_pose_model_done,
+        pose_model_stats_text,
+        pose_model_stats,
+        change_pose_model_button,
+    ]
 )
 card_connect_pose_model = Card(
     title="Connect to Pose Estimation Model",
@@ -291,9 +310,9 @@ def connect_to_det_model():
     if det_session_id is not None:
         connect_det_model_button.hide()
         connect_det_model_done.show()
+        det_model_stats_text.show()
         det_model_stats.set_session_id(session_id=det_session_id)
-        if det_model_stats.is_hidden():
-            det_model_stats.show()
+        det_model_stats.show()
         change_det_model_button.show()
         det_model_meta_json = api.task.send_request(
             det_session_id,
@@ -311,6 +330,7 @@ def connect_to_det_model():
 @change_det_model_button.click
 def change_det_model():
     connect_det_model_done.hide()
+    det_model_stats_text.hide()
     det_model_stats.hide()
     change_det_model_button.hide()
     connect_det_model_button.show()
@@ -387,8 +407,8 @@ def connect_to_pose_model():
         connect_pose_model_button.hide()
         connect_pose_model_done.show()
         pose_model_stats.set_session_id(session_id=pose_session_id)
-        if pose_model_stats.is_hidden():
-            pose_model_stats.show()
+        pose_model_stats_text.show()
+        pose_model_stats.show()
         change_pose_model_button.show()
         pose_model_meta_json = api.task.send_request(
             pose_session_id,
@@ -406,6 +426,7 @@ def connect_to_pose_model():
 @change_pose_model_button.click
 def change_pose_model():
     connect_pose_model_done.hide()
+    pose_model_stats_text.hide()
     pose_model_stats.hide()
     change_pose_model_button.hide()
     connect_pose_model_button.show()
