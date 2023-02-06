@@ -77,8 +77,6 @@ connect_det_model_button = Button(
 )
 connect_det_model_done = DoneLabel("Detection model connected")
 connect_det_model_done.hide()
-det_model_stats_text = Text("Model Info")
-det_model_stats_text.hide()
 det_model_stats = ModelInfo()
 change_det_model_button = Button(
     '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>change detection model',
@@ -92,7 +90,6 @@ connect_det_model_content = Container(
         select_det_model,
         connect_det_model_button,
         connect_det_model_done,
-        det_model_stats_text,
         det_model_stats,
         change_det_model_button,
     ]
@@ -183,8 +180,6 @@ connect_pose_model_button = Button(
 )
 connect_pose_model_done = DoneLabel("Pose estimation model connected")
 connect_pose_model_done.hide()
-pose_model_stats_text = Text("Model Info")
-pose_model_stats_text.hide()
 pose_model_stats = ModelInfo()
 change_pose_model_button = Button(
     '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>change pose estimation model',
@@ -198,7 +193,6 @@ connect_pose_model_content = Container(
         select_pose_model,
         connect_pose_model_button,
         connect_pose_model_done,
-        pose_model_stats_text,
         pose_model_stats,
         change_pose_model_button,
     ]
@@ -310,7 +304,6 @@ def connect_to_det_model():
     if det_session_id is not None:
         connect_det_model_button.hide()
         connect_det_model_done.show()
-        det_model_stats_text.show()
         det_model_stats.set_session_id(session_id=det_session_id)
         det_model_stats.show()
         change_det_model_button.show()
@@ -330,7 +323,6 @@ def connect_to_det_model():
 @change_det_model_button.click
 def change_det_model():
     connect_det_model_done.hide()
-    det_model_stats_text.hide()
     det_model_stats.hide()
     change_det_model_button.hide()
     connect_det_model_button.show()
@@ -407,7 +399,6 @@ def connect_to_pose_model():
         connect_pose_model_button.hide()
         connect_pose_model_done.show()
         pose_model_stats.set_session_id(session_id=pose_session_id)
-        pose_model_stats_text.show()
         pose_model_stats.show()
         change_pose_model_button.show()
         pose_model_meta_json = api.task.send_request(
@@ -426,7 +417,6 @@ def connect_to_pose_model():
 @change_pose_model_button.click
 def change_pose_model():
     connect_pose_model_done.hide()
-    pose_model_stats_text.hide()
     pose_model_stats.hide()
     change_pose_model_button.hide()
     connect_pose_model_button.show()
