@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 import numpy as np
 import supervisely as sly
-from supervisely.app.content import StateJson, DataJson
 from dotenv import load_dotenv
 from supervisely.app.widgets import (
     Container,
