@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import supervisely as sly
 from dotenv import load_dotenv
-import ast
 import yaml
 from supervisely.app.widgets import (
     Container,
