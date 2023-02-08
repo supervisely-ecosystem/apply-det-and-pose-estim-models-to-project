@@ -1,2 +1,6 @@
 local.env
 __pycache__
+src/test.py
+src/test_0.py
+src/test_2.py
+src/test_3.py
