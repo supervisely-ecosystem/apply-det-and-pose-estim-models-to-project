@@ -1,0 +1,28 @@
+{
+    "name": "Apply Detection and Pose Estimation Models to Images Project",
+    "type": "app",
+    "version": "2.0.0",
+    "categories": [
+      "neural network",
+      "images",
+      "pose estimation",
+      "keypoints detection",
+      "object detection",
+      "inference interfaces"
+    ],
+    "description": "Label project images using detector and pose estimator",
+    "docker_image": "supervisely/base-py-sdk:6.69.43",
+    "min_instance_version": "6.5.22",
+    "entrypoint": "python -m uvicorn src.main:g.app --host 0.0.0.0 --port 8000",
+    "port": 8000,
+    "task_location": "workspace_tasks",
+    "icon": "some url",
+    "icon_cover": true,
+    "context_menu": {
+      "target": [
+        "images_project"
+      ],
+      "context_root": "Neural Networks"
+    },
+    "poster": "some url"
+  }
