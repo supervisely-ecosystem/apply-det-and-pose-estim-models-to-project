@@ -143,7 +143,7 @@ card_det_model_classes.collapse()
 card_det_model_classes.lock()
 
 
-### 4. Detection settings
+### 4.1 Detection settings
 det_settings_editor = Editor(language_mode="yaml")
 save_det_settings_button = Button("save detection settings")
 reselect_det_settings_button = Button(
@@ -714,17 +714,7 @@ def redraw_pose_preview():
 @apply_models_to_project_button.click
 def apply_models_to_project():
     with progress_bar(message="Applying models to project...") as pbar:
-        # download input project to ouput project directory
-        if os.path.exists(output_project_dir):
-            sly.fs.clean_dir(output_project_dir)
-        sly.download_project(
-            api=api,
-            project_id=project_id,
-            dest_dir=output_project_dir,
-            dataset_ids=dataset_ids,
-            save_image_info=True,
-            save_images=True,
-        )
+        output_project_name_input.enable_readonly()
         # merge output project meta with model metas
         output_project = sly.Project(output_project_dir, mode=sly.OpenMode.READ)
         meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
