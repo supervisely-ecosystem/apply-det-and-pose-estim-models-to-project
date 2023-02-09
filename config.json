@@ -19,9 +19,7 @@
     "icon": "some url",
     "icon_cover": true,
     "context_menu": {
-      "target": [
-        "images_project"
-      ],
+      "target": ["images_project", "images_dataset"],
       "context_root": "Neural Networks"
     },
     "poster": "some url"
