@@ -13,7 +13,7 @@ from supervisely.app.widgets import (
     Input,
     Button,
     Field,
-    SlyTqdm,
+    Progress,
     SelectDataset,
     Image,
     ModelInfo,
@@ -334,7 +334,7 @@ output_project_name_input_f = Field(output_project_name_input, "Output project n
 apply_models_to_project_button = Button("APPLY MODELS TO PROJECT")
 download_input_text = Text("Downloading input project...")
 download_input_text.hide()
-apply_progress_bar = SlyTqdm()
+apply_progress_bar = Progress()
 upload_output_text = Text("Uploading labeled project to platform...")
 upload_output_text.hide()
 output_project_thmb = ProjectThumbnail()
@@ -751,7 +751,7 @@ def apply_models_to_project():
         dataset_dir = os.path.join(g.output_project_dir, dataset_info.name)
         datasets_info[dataset_info.id] = sly.Dataset(dataset_dir, mode=sly.OpenMode.READ)
     # apply models to project
-    with apply_progress_bar(message="Applying models to project...") as pbar:
+    with apply_progress_bar(message="Applying models to project...", total=len(images_info)) as pbar:
         for image_info in images_info:
             # apply detection model to image
             det_predictions = api.task.send_request(
