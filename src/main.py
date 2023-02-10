@@ -201,7 +201,7 @@ card_det_image_preview.lock()
 det_settings_preview_content = Container(
     widgets=[card_det_settings, card_det_image_preview],
     direction="horizontal",
-    fractions=[1, 2],
+    fractions=[1, 1],
 )
 card_det_settings_preview = Card(
     title="Detection Settings and Preview",
@@ -316,7 +316,7 @@ card_pose_image_preview.lock()
 pose_settings_preview_content = Container(
     widgets=[card_pose_settings, card_pose_image_preview],
     direction="horizontal",
-    fractions=[1, 2],
+    fractions=[1, 1],
 )
 card_pose_settings_preview = Card(
     title="Pose Estimation Settings and Preview",
