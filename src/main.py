@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import numpy as np
 import supervisely as sly
+import src.globals as g
 from dotenv import load_dotenv
 import yaml
 from supervisely.app.widgets import (
@@ -12,7 +13,7 @@ from supervisely.app.widgets import (
     Input,
     Button,
     Field,
-    Progress,
+    SlyTqdm,
     SelectDataset,
     Image,
     ModelInfo,
@@ -57,13 +58,9 @@ dataset_ids = [dataset_id] if dataset_id else []
 update_globals(dataset_ids)
 
 # define global variables
-app_root_directory = str(Path(__file__).parent.absolute().parents[0])
-sly.logger.info(f"App root directory: {app_root_directory}")
-app_data_dir = os.path.join(app_root_directory, "tempfiles")
-output_project_dir = os.path.join(app_data_dir, "output_project_dir")
-static_dir = Path(os.path.join(app_data_dir, "preview_files"))
-os.makedirs(static_dir, exist_ok=True)
-sly.fs.clean_dir(static_dir)
+sly.logger.info(f"App root directory: {g.app_root_directory}")
+os.makedirs(g.static_dir, exist_ok=True)
+sly.io.fs.clean_dir(g.static_dir)
 det_model_data = {}
 pose_model_data = {}
 
@@ -335,7 +332,9 @@ card_pose_settings_preview.lock()
 output_project_name_input = Input(value="Labeled project")
 output_project_name_input_f = Field(output_project_name_input, "Output project name")
 apply_models_to_project_button = Button("APPLY MODELS TO PROJECT")
-progress_bar = Progress()
+download_progress_bar = SlyTqdm(show_percents=True)
+apply_progress_bar = SlyTqdm(show_percents=True)
+upload_progress_bar = SlyTqdm(show_percents=True)
 output_project_thmb = ProjectThumbnail()
 output_project_thmb.hide()
 output_project_done = DoneLabel("done")
@@ -344,7 +343,9 @@ output_project_content = Container(
     [
         output_project_name_input_f,
         apply_models_to_project_button,
-        progress_bar,
+        download_progress_bar,
+        apply_progress_bar,
+        upload_progress_bar,
         output_project_thmb,
         output_project_done,
     ]
@@ -372,7 +373,7 @@ app = sly.Application(
             card_output_project,
         ]
     ),
-    static_dir=static_dir,
+    static_dir=g.static_dir,
 )
 
 
@@ -488,26 +489,14 @@ def save_det_settings():
     save_det_settings_button.hide()
     det_settings_done.show()
     det_preview_loading.show()
-    # download input project to ouput project directory
-    if os.path.exists(output_project_dir):
-        sly.fs.clean_dir(output_project_dir)
-    sly.download_project(
-        api=api,
-        project_id=project_id,
-        dest_dir=output_project_dir,
-        dataset_ids=dataset_ids,
-        save_image_info=True,
-        save_images=True,
-    )
-    global output_project, preview_project, preview_image_info, preview_bboxes, preview_image, preview_det_ann, det_preview_output_path
-    output_project = sly.Project(output_project_dir, mode=sly.OpenMode.READ)
-    # create project for storing preview images
-    if os.path.exists(static_dir):
-        sly.fs.clean_dir(static_dir)
-    preview_project = output_project.copy_data(static_dir)
+    # create preview project meta
+    global preview_project_meta, preview_image_info, preview_bboxes, preview_image, preview_det_ann
+    if os.path.exists(g.static_dir):
+        sly.io.fs.clean_dir(g.static_dir)
+    preview_project_meta = api.project.get_meta(id=project_id)
+    preview_project_meta = sly.ProjectMeta.from_json(preview_project_meta)
     # merge preview project meta with det model meta
-    meta_with_det = preview_project.meta.merge(det_model_data["det_model_meta"])
-    preview_project.set_meta(meta_with_det)
+    preview_project_meta = preview_project_meta.merge(det_model_data["det_model_meta"])
     # get preview image info
     preview_dataset_info = api.dataset.get_info_by_id(dataset_ids[0])
     preview_image_info = api.image.get_list(preview_dataset_info.id)[0]
@@ -528,16 +517,17 @@ def save_det_settings():
             coordinates = object["points"]["exterior"]
             det_bbox = {"bbox": [coordinates[0][0], coordinates[0][1], coordinates[1][0], coordinates[1][1], 1.0]}
             preview_bboxes.append(det_bbox)
-    preview_det_ann = sly.Annotation.from_json(preview_det_ann, preview_project.meta)
-    det_preview_output_path = os.path.join(static_dir, "det_labeled.jpg")
+    preview_det_ann = sly.Annotation.from_json(preview_det_ann, preview_project_meta)
     preview_image = api.image.download_np(preview_image_info.id)
     preview_det_ann.draw_pretty(
         bitmap=preview_image.copy(),
-        output_path=det_preview_output_path,
+        output_path=g.local_det_preview_path,
         thickness=det_line_thickness.get_value(),
         fill_rectangles=False,
     )
-    det_labeled_image.set(url="/static/det_labeled.jpg")
+    # upload detection inference preview image to team files
+    det_preview_file_info = api.file.upload(team_id, g.local_det_preview_path, g.remote_det_preview_path)
+    det_labeled_image.set(url=det_preview_file_info.full_storage_url)
     # show preview
     det_preview_loading.hide()
     card_det_image_preview.uncollapse()
@@ -563,11 +553,12 @@ def redraw_det_preview():
     det_redraw_loading.show()
     preview_det_ann.draw_pretty(
         bitmap=preview_image.copy(),
-        output_path=det_preview_output_path,
+        output_path=g.local_det_preview_path,
         thickness=det_line_thickness.get_value(),
         fill_rectangles=False,
     )
-    det_labeled_image.set(url="/static/det_labeled.jpg")
+    det_preview_file_info = api.file.upload(team_id, g.local_det_preview_path, g.remote_det_preview_path)
+    det_labeled_image.set(url=det_preview_file_info.full_storage_url)
     det_labeled_image.show()
     det_redraw_loading.hide()
 
@@ -648,11 +639,11 @@ def save_pose_settings():
     else:
         sly.logger.info("Pose estimation inference settings:")
         sly.logger.info(str(pose_inference_settings))
-    # merge preview project meta with det model meta
-    meta_with_pose = preview_project.meta.merge(pose_model_data["pose_model_meta"])
-    preview_project.set_meta(meta_with_pose)
+    # merge preview project meta with pose model meta
+    global preview_project_meta
+    preview_project_meta = preview_project_meta.merge(pose_model_data["pose_model_meta"])
     # get image annotation
-    global preview_pose_ann, pose_preview_output_path
+    global preview_pose_ann
     pose_inference_settings["detected_bboxes"] = preview_bboxes
     preview_pose_predictions = api.task.send_request(
         pose_model_data["pose_session_id"],
@@ -665,15 +656,20 @@ def save_pose_settings():
     for object in preview_pose_ann_objects:
         if object["classTitle"] not in pose_model_data["pose_model_classes"]:
             preview_pose_ann["objects"].remove(object)
-    preview_pose_ann = sly.Annotation.from_json(preview_pose_ann, preview_project.meta)
-    pose_preview_output_path = os.path.join(static_dir, "pose_labeled.jpg")
+    preview_pose_ann = sly.Annotation.from_json(preview_pose_ann, preview_project_meta)
     preview_pose_ann.draw_pretty(
         bitmap=preview_image.copy(),
-        output_path=pose_preview_output_path,
+        output_path=g.local_pose_preview_path,
         thickness=pose_line_thickness.get_value(),
         fill_rectangles=False,
     )
-    pose_labeled_image.set(url="/static/pose_labeled.jpg")
+    # upload pose estimation inference preview image to team files
+    pose_preview_file_info = api.file.upload(
+        team_id,
+        g.local_pose_preview_path,
+        g.remote_pose_preview_path,
+    )
+    pose_labeled_image.set(url=pose_preview_file_info.full_storage_url)
     # show preview
     pose_preview_loading.hide()
     card_pose_image_preview.uncollapse()
@@ -701,40 +697,58 @@ def redraw_pose_preview():
     pose_redraw_loading.show()
     preview_pose_ann.draw_pretty(
         bitmap=preview_image.copy(),
-        output_path=pose_preview_output_path,
+        output_path=g.local_pose_preview_path,
         thickness=pose_line_thickness.get_value(),
         fill_rectangles=False,
     )
-    pose_labeled_image.set(url="/static/pose_labeled.jpg")
+    pose_preview_file_info = api.file.upload(
+        team_id,
+        g.local_pose_preview_path,
+        g.remote_pose_preview_path,
+    )
+    pose_labeled_image.set(url=pose_preview_file_info.full_storage_url)
     pose_labeled_image.show()
     pose_redraw_loading.hide()
 
 
 @apply_models_to_project_button.click
 def apply_models_to_project():
-    with progress_bar(message="Applying models to project...") as pbar:
-        output_project_name_input.enable_readonly()
-        # merge output project meta with model metas
-        output_project = sly.Project(output_project_dir, mode=sly.OpenMode.READ)
-        meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
-        output_project.set_meta(meta_with_det)
-        meta_with_pose = output_project.meta.merge(pose_model_data["pose_model_meta"])
-        output_project.set_meta(meta_with_pose)
-        output_project_meta = sly.Project(output_project_dir, mode=sly.OpenMode.READ).meta
-        # define session ids
-        det_session_id = det_model_data["det_session_id"]
-        pose_session_id = pose_model_data["pose_session_id"]
-        # define inference settings
-        det_inference_settings = det_model_data["det_inference_settings"]
-        pose_inference_settings = pose_model_data["pose_inference_settings"]
-        # define images info
-        images_info = []
-        datasets_info = {}
-        for dataset_info in api.dataset.get_list(project_id):
-            images_info.extend(api.image.get_list(dataset_info.id))
-            dataset_dir = os.path.join(output_project_dir, dataset_info.name)
-            datasets_info[dataset_info.id] = sly.Dataset(dataset_dir, mode=sly.OpenMode.READ)
-        # apply models to project
+    output_project_name_input.enable_readonly()
+    # download input project to ouput project directory
+    with download_progress_bar(message="Downloading input project...") as pbar:
+        if os.path.exists(g.output_project_dir):
+            sly.fs.clean_dir(g.output_project_dir)
+        sly.download_project(
+            api=api,
+            project_id=project_id,
+            dest_dir=g.output_project_dir,
+            dataset_ids=dataset_ids,
+            save_image_info=True,
+            save_images=True,
+        )
+        output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
+    # merge output project meta with model metas
+    output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
+    meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
+    output_project.set_meta(meta_with_det)
+    meta_with_pose = output_project.meta.merge(pose_model_data["pose_model_meta"])
+    output_project.set_meta(meta_with_pose)
+    output_project_meta = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ).meta
+    # define session ids
+    det_session_id = det_model_data["det_session_id"]
+    pose_session_id = pose_model_data["pose_session_id"]
+    # define inference settings
+    det_inference_settings = det_model_data["det_inference_settings"]
+    pose_inference_settings = pose_model_data["pose_inference_settings"]
+    # define images info
+    images_info = []
+    datasets_info = {}
+    for dataset_info in api.dataset.get_list(project_id):
+        images_info.extend(api.image.get_list(dataset_info.id))
+        dataset_dir = os.path.join(g.output_project_dir, dataset_info.name)
+        datasets_info[dataset_info.id] = sly.Dataset(dataset_dir, mode=sly.OpenMode.READ)
+    # apply models to project
+    with apply_progress_bar(message="Applying models to project...") as pbar:
         for image_info in images_info:
             # apply detection model to image
             det_predictions = api.task.send_request(
@@ -775,15 +789,21 @@ def apply_models_to_project():
             image_dataset = datasets_info[image_info.dataset_id]
             image_dataset.set_ann(image_info.name, total_annotation)
             pbar.update()
-    final_project_id, final_project_name = sly.upload_project(
-        dir=output_project_dir,
-        api=api,
-        workspace_id=workspace_id,
-        project_name=output_project_name_input.get_value(),
-    )
+    with upload_progress_bar(message="Uploading labeled project to platform...") as pbar:
+        final_project_id, final_project_name = sly.upload_project(
+            dir=g.output_project_dir,
+            api=api,
+            workspace_id=workspace_id,
+            project_name=output_project_name_input.get_value(),
+        )
+    # prepare project thumbnail
     final_project_info = api.project.get_info_by_id(final_project_id)
     output_project_thmb.set(info=final_project_info)
     output_project_thmb.show()
     apply_models_to_project_button.hide()
     output_project_done.show()
+    # remove unnecessary files and directories since they are no longer needed
+    api.file.remove(team_id, "/" + g.remote_det_preview_path)
+    api.file.remove(team_id, "/" + g.remote_pose_preview_path)
+    sly.io.fs.remove_dir(g.app_data_dir)
     sly.logger.info("Project was successfully labeled")
