@@ -26,30 +26,29 @@ from supervisely.app.widgets import (
 
 # function for updating global variables
 def update_globals(new_dataset_ids):
-    global dataset_ids, project_id, workspace_id, team_id, project_info, project_meta
+    global dataset_ids, project_id, workspace_id, project_info, project_meta
     dataset_ids = new_dataset_ids
     if dataset_ids:
         project_id = api.dataset.get_info_by_id(dataset_ids[0]).project_id
         workspace_id = api.project.get_info_by_id(project_id).workspace_id
-        team_id = api.workspace.get_info_by_id(workspace_id).team_id
         project_info = api.project.get_info_by_id(project_id)
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
         print(f"Project is {project_info.name}, {dataset_ids}")
     elif project_id:
         workspace_id = api.project.get_info_by_id(project_id).workspace_id
-        team_id = api.workspace.get_info_by_id(workspace_id).team_id
         project_info = api.project.get_info_by_id(project_id)
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
     else:
         print("All globals set to None")
         dataset_ids = []
-        project_id, workspace_id, team_id, project_info, project_meta = [None] * 5
+        project_id, workspace_id, project_info, project_meta = [None] * 4
 
 
 # authentication
 load_dotenv("local.env")
 load_dotenv(os.path.expanduser("~/supervisely.env"))
 api = sly.Api()
+team_id = sly.env.team_id()
 
 # if app had started from context menu, one of this has to be set:
 project_id = sly.env.project_id(raise_not_found=False)
@@ -75,7 +74,7 @@ card_project_settings = Card(title="Dataset selection", content=dataset_selector
 
 
 ### 2. Connect to detection model
-select_det_model = SelectAppSession(allowed_session_tags=["deployed_nn"])
+select_det_model = SelectAppSession(team_id=team_id, tags=["deployed_nn"])
 connect_det_model_button = Button(
     text='<i style="margin-right: 5px" class="zmdi zmdi-power"></i>connect to detection model',
     button_type="success",
@@ -218,7 +217,7 @@ card_det_settings_preview.lock()
 
 
 ### 5. Connect to pose estimation model
-select_pose_model = SelectAppSession(allowed_session_tags=["deployed_nn_keypoints"])
+select_pose_model = SelectAppSession(team_id=team_id, tags=["deployed_nn_keypoints"])
 connect_pose_model_button = Button(
     text='<i style="margin-right: 5px" class="zmdi zmdi-power"></i>connect to pose estimation model',
     button_type="success",
