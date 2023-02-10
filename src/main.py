@@ -332,9 +332,11 @@ card_pose_settings_preview.lock()
 output_project_name_input = Input(value="Labeled project")
 output_project_name_input_f = Field(output_project_name_input, "Output project name")
 apply_models_to_project_button = Button("APPLY MODELS TO PROJECT")
-download_progress_bar = SlyTqdm(show_percents=True)
-apply_progress_bar = SlyTqdm(show_percents=True)
-upload_progress_bar = SlyTqdm(show_percents=True)
+download_input_text = Text("Downloading input project...")
+download_input_text.hide()
+apply_progress_bar = SlyTqdm()
+upload_output_text = Text("Uploading labeled project to platform...")
+upload_output_text.hide()
 output_project_thmb = ProjectThumbnail()
 output_project_thmb.hide()
 output_project_done = DoneLabel("done")
@@ -343,9 +345,9 @@ output_project_content = Container(
     [
         output_project_name_input_f,
         apply_models_to_project_button,
-        download_progress_bar,
+        download_input_text,
         apply_progress_bar,
-        upload_progress_bar,
+        upload_output_text,
         output_project_thmb,
         output_project_done,
     ]
@@ -715,19 +717,19 @@ def redraw_pose_preview():
 def apply_models_to_project():
     output_project_name_input.enable_readonly()
     # download input project to ouput project directory
-    with download_progress_bar(message="Downloading input project...") as pbar:
-        if os.path.exists(g.output_project_dir):
-            sly.fs.clean_dir(g.output_project_dir)
-        sly.download_project(
-            api=api,
-            project_id=project_id,
-            dest_dir=g.output_project_dir,
-            dataset_ids=dataset_ids,
-            save_image_info=True,
-            save_images=True,
-        )
-        output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
-        pbar.update()
+    download_input_text.show()
+    if os.path.exists(g.output_project_dir):
+        sly.fs.clean_dir(g.output_project_dir)
+    sly.download_project(
+        api=api,
+        project_id=project_id,
+        dest_dir=g.output_project_dir,
+        dataset_ids=dataset_ids,
+        save_image_info=True,
+        save_images=True,
+    )
+    output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
+    download_input_text.hide()
     # merge output project meta with model metas
     output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
     meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
@@ -790,14 +792,14 @@ def apply_models_to_project():
             image_dataset = datasets_info[image_info.dataset_id]
             image_dataset.set_ann(image_info.name, total_annotation)
             pbar.update()
-    with upload_progress_bar(message="Uploading labeled project to platform...") as pbar:
-        final_project_id, final_project_name = sly.upload_project(
-            dir=g.output_project_dir,
-            api=api,
-            workspace_id=workspace_id,
-            project_name=output_project_name_input.get_value(),
-        )
-        pbar.update()
+    upload_output_text.show()
+    final_project_id, final_project_name = sly.upload_project(
+        dir=g.output_project_dir,
+        api=api,
+        workspace_id=workspace_id,
+        project_name=output_project_name_input.get_value(),
+    )
+    upload_output_text.hide()
     # prepare project thumbnail
     final_project_info = api.project.get_info_by_id(final_project_id)
     output_project_thmb.set(info=final_project_info)
