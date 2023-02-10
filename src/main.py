@@ -204,7 +204,7 @@ det_settings_preview_content = Container(
     fractions=[1, 2],
 )
 card_det_settings_preview = Card(
-    title="Detection settings and preview",
+    title="Detection Settings and Preview",
     content=det_settings_preview_content,
     collapsable=True,
     lock_message="Complete the previous step to unlock",
@@ -319,7 +319,7 @@ pose_settings_preview_content = Container(
     fractions=[1, 2],
 )
 card_pose_settings_preview = Card(
-    title="Pose estimation settings and preview",
+    title="Pose Estimation Settings and Preview",
     content=pose_settings_preview_content,
     collapsable=True,
     lock_message="Complete the previous step to unlock",
