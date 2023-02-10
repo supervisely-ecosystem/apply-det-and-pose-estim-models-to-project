@@ -727,6 +727,7 @@ def apply_models_to_project():
             save_images=True,
         )
         output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
+        pbar.update()
     # merge output project meta with model metas
     output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
     meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
@@ -796,6 +797,7 @@ def apply_models_to_project():
             workspace_id=workspace_id,
             project_name=output_project_name_input.get_value(),
         )
+        pbar.update()
     # prepare project thumbnail
     final_project_info = api.project.get_info_by_id(final_project_id)
     output_project_thmb.set(info=final_project_info)
