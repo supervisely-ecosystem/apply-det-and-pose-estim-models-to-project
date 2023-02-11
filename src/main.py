@@ -57,10 +57,11 @@ dataset_id = sly.env.dataset_id(raise_not_found=False)
 dataset_ids = [dataset_id] if dataset_id else []
 update_globals(dataset_ids)
 
-# define global variables
 sly.logger.info(f"App root directory: {g.app_root_directory}")
+# create directory for storing preview files
 os.makedirs(g.static_dir, exist_ok=True)
 sly.io.fs.clean_dir(g.static_dir)
+# dictionaries for storing detection and pose estimation model data
 det_model_data = {}
 pose_model_data = {}
 
@@ -383,6 +384,7 @@ app = sly.Application(
 def on_dataset_selected(new_dataset_ids):
     update_globals(new_dataset_ids)
     if project_info is not None:
+        # set default output project name
         output_project_name_input.set_value(value=project_info.name + " Labeled")
     card_connect_det_model.unlock()
     card_connect_det_model.uncollapse()
@@ -395,9 +397,11 @@ def connect_to_det_model():
         connect_det_model_button.hide()
         connect_det_model_done.show()
         select_det_model.disable()
+        # show detection model info
         det_model_stats.set_session_id(session_id=det_session_id)
         det_model_stats.show()
         change_det_model_button.show()
+        # get detection model meta
         det_model_meta_json = api.task.send_request(
             det_session_id,
             "get_output_classes_and_tags",
@@ -406,6 +410,7 @@ def connect_to_det_model():
         sly.logger.info(f"Detection model meta: {str(det_model_meta_json)}")
         det_model_data["det_model_meta"] = sly.ProjectMeta.from_json(det_model_meta_json)
         det_model_data["det_session_id"] = det_session_id
+        # show detection classes table
         det_classes_table.read_meta(det_model_data["det_model_meta"])
         card_det_model_classes.unlock()
         card_det_model_classes.uncollapse()
@@ -435,6 +440,7 @@ def on_det_classes_selected(selected_det_classes):
 @select_det_classes_button.click
 def select_det_classes():
     det_classes_table.disable()
+    # get selected classes for detection model
     det_model_data["det_model_classes"] = det_classes_table.get_selected_classes()
     sly.logger.info(f"Detection model classes: {str(det_model_data['det_model_classes'])}")
     n_det_classes = len(det_model_data["det_model_classes"])
@@ -445,7 +451,7 @@ def select_det_classes():
         det_classes_done.text = f"{n_det_classes} class was selected successfully"
     det_classes_done.show()
     select_other_det_classes_button.show()
-    # delete unselected classes from model meta
+    # delete unselected classes from detection model meta
     det_classes_collection = [cls["title"] for cls in det_model_data["det_model_meta"].to_json()["classes"]]
     det_classes_to_delete = [cls for cls in det_classes_collection if cls not in det_model_data["det_model_classes"]]
     det_model_data["det_model_meta"] = det_model_data["det_model_meta"].delete_obj_classes(det_classes_to_delete)
@@ -511,16 +517,19 @@ def save_det_settings():
     )
     preview_det_ann = preview_det_predictions["annotation"]
     preview_det_ann_objects = preview_det_ann["objects"].copy()
+    # filter object classes in annotation according to selected classes
     preview_bboxes = []
     for object in preview_det_ann_objects:
         if object["classTitle"] not in det_model_data["det_model_classes"]:
             preview_det_ann["objects"].remove(object)
         else:
+            # save predicted bounding boxes to detect keypoints inside them using pose estimation model
             coordinates = object["points"]["exterior"]
             det_bbox = {"bbox": [coordinates[0][0], coordinates[0][1], coordinates[1][0], coordinates[1][1], 1.0]}
             preview_bboxes.append(det_bbox)
     preview_det_ann = sly.Annotation.from_json(preview_det_ann, preview_project_meta)
     preview_image = api.image.download_np(preview_image_info.id)
+    # draw predicted bounding boxes on preview image
     preview_det_ann.draw_pretty(
         bitmap=preview_image.copy(),
         output_path=g.local_det_preview_path,
@@ -572,9 +581,11 @@ def connect_to_pose_model():
         connect_pose_model_button.hide()
         connect_pose_model_done.show()
         select_pose_model.disable()
+        # show pose estimation model info
         pose_model_stats.set_session_id(session_id=pose_session_id)
         pose_model_stats.show()
         change_pose_model_button.show()
+        # get pose estimation model meta
         pose_model_meta_json = api.task.send_request(
             pose_session_id,
             "get_output_classes_and_tags",
@@ -583,6 +594,7 @@ def connect_to_pose_model():
         sly.logger.info(f"Pose estimation model meta: {str(pose_model_meta_json)}")
         pose_model_data["pose_model_meta"] = sly.ProjectMeta.from_json(pose_model_meta_json)
         pose_model_data["pose_session_id"] = pose_session_id
+        # show pose estimation classes table
         pose_classes_table.read_meta(pose_model_data["pose_model_meta"])
         # get pose estimation custom inference settings
         pose_inference_settings = api.task.send_request(
@@ -644,7 +656,7 @@ def save_pose_settings():
     # merge preview project meta with pose model meta
     global preview_project_meta
     preview_project_meta = preview_project_meta.merge(pose_model_data["pose_model_meta"])
-    # get image annotation
+    # detect keypoints on image using bounding boxes predicted by detetction model
     global preview_pose_ann
     pose_inference_settings["detected_bboxes"] = preview_bboxes
     preview_pose_predictions = api.task.send_request(
@@ -655,10 +667,12 @@ def save_pose_settings():
     )
     preview_pose_ann = preview_pose_predictions["annotation"]
     preview_pose_ann_objects = preview_pose_ann["objects"].copy()
+    # filter object classes in annotation according to selected classes
     for object in preview_pose_ann_objects:
         if object["classTitle"] not in pose_model_data["pose_model_classes"]:
             preview_pose_ann["objects"].remove(object)
     preview_pose_ann = sly.Annotation.from_json(preview_pose_ann, preview_project_meta)
+    # draw predicted keypoints graph on image
     preview_pose_ann.draw_pretty(
         bitmap=preview_image.copy(),
         output_path=g.local_pose_preview_path,
@@ -793,6 +807,7 @@ def apply_models_to_project():
             image_dataset.set_ann(image_info.name, total_annotation)
             pbar.update()
     upload_output_text.show()
+    # upload labeled project to platform
     final_project_id, final_project_name = sly.upload_project(
         dir=g.output_project_dir,
         api=api,
