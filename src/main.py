@@ -660,17 +660,7 @@ def save_det_settings():
         sly.logger.info(str(det_inference_settings))
     save_det_settings_button.hide()
     det_settings_done.show()
-    card_det_image_preview.loading = True
-    # get preview image info
-    if det_is_random_preview.is_checked():
-        preview_image_info = get_random_image(images_info)
-    else:
-        id = select_det_preview.get_value()
-        preview_image_info = api.image.get_info_by_id(id=id)
-    # draw detection preview
-    draw_inference_preview(preview_image_info, mode="det", det_settings=det_inference_settings)
-    # show preview
-    card_det_image_preview.loading = False
+
     reselect_det_settings_button.show()
     card_connect_pose_model.unlock()
     card_connect_pose_model.uncollapse()
@@ -828,7 +818,6 @@ def save_pose_settings():
     pose_settings_editor.readonly = True
     save_pose_settings_button.hide()
     pose_settings_done.show()
-    card_pose_image_preview.loading = True
     # get pose estimation inference settings
     pose_inference_settings = pose_settings_editor.get_text()
     pose_inference_settings = yaml.safe_load(pose_inference_settings)
@@ -840,22 +829,7 @@ def save_pose_settings():
         sly.logger.info("Pose estimation inference settings:")
         sly.logger.info(str(pose_inference_settings))
     # detect keypoints on image using bounding boxes predicted by detetction model
-    if pose_is_random_preview.is_checked():
-        preview_image_info = get_random_image(images_info)
-    else:
-        id = select_pose_preview.get_value()
-        preview_image_info = api.image.get_info_by_id(id=id)
-    # draw detection preview
-    draw_inference_preview(
-        preview_image_info,
-        mode="pose",
-        det_settings=det_model_data["det_inference_settings"],
-        pose_settings=pose_inference_settings,
-    )
-    # show preview
-    card_pose_image_preview.loading = False
-    card_pose_image_preview.uncollapse()
-    card_pose_image_preview.unlock()
+
     reselect_pose_settings_button.show()
     card_output_project.unlock()
     card_output_project.uncollapse()
