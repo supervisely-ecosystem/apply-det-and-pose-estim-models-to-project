@@ -958,3 +958,4 @@ def apply_models_to_project():
     api.file.remove(team_id, "/" + g.remote_pose_preview_path)
     sly.io.fs.remove_dir(g.app_data_dir)
     sly.logger.info("Project was successfully labeled")
+    app.shutdown()

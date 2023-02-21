@@ -16,11 +16,11 @@
     "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
     "port": 8000,
     "task_location": "workspace_tasks",
-    "icon": "some url",
+    "icon": "https://user-images.githubusercontent.com/97401023/220315624-c6e79003-39fb-43e7-be48-ead1c9fae771.png",
     "icon_cover": true,
     "context_menu": {
       "target": ["images_project", "images_dataset"],
       "context_root": "Neural Networks"
     },
-    "poster": "some url"
+    "poster": "https://user-images.githubusercontent.com/97401023/220315713-222c3b45-5ab1-4f07-8641-2a098f261b0c.png"
   }
