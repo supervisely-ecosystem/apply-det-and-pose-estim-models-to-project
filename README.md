@@ -6,6 +6,7 @@
 
 <p align="center">
   <a href="#Overview">Overview</a> •
+  <a href="#Related-Apps">Related Apps</a> •
   <a href="#Result">Result</a> •
   <a href="#Screenshot">Screenshot</a>
 </p>
@@ -31,6 +32,21 @@ Application key points:
 - Select classes of Pose Estimation Model 
 - Preview pose estimation results
 - Adjust inference settings for models
+
+
+# Related Apps
+
+1. [Serve MMDetection](https://ecosystem.supervise.ly/apps/mmdetection/serve) - app with detection models from MMDetection framework
+
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/mmdetection/serve" src="https://user-images.githubusercontent.com/97401023/220325120-2e4aa424-8b5f-4e06-9035-742142a0f3e7.png" width="300px"/>
+
+2. [Serve YOLOv5](https://ecosystem.supervise.ly/apps/yolov5/supervisely/serve) - app with YOLOv5 detection models
+
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/yolov5/supervisely/serve" src="https://user-images.githubusercontent.com/97401023/220324783-380bc2a4-26c2-4c0f-8333-4cf55a9296de.png" width="300px"/>
+
+3. [Serve ViTPose](https://ecosystem.supervise.ly/apps/yolov5/vitpose/serve) - app with ViTPose pose estimation models
+
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/yolov5/vitpose/serve" width="300px"/>
 
 # Result
 
