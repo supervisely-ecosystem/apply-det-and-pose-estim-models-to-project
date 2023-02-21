@@ -421,8 +421,6 @@ def on_dataset_selected(new_dataset_ids):
     if project_info is not None:
         # set default output project name
         output_project_name_input.set_value(value=project_info.name + " (keypoints prediction)")
-    card_connect_det_model.unlock()
-    card_connect_det_model.uncollapse()
 
 
 @download_data_button.click
@@ -445,6 +443,8 @@ def download_input_data():
     download_data_button.hide()
     download_done.show()
     reselect_data_button.show()
+    card_connect_det_model.unlock()
+    card_connect_det_model.uncollapse()
 
 
 @reselect_data_button.click
