@@ -6,7 +6,6 @@
 
 <p align="center">
   <a href="#Overview">Overview</a> •
-  <a href="#How-To-Run">How To Run</a> •
   <a href="#Result">Result</a> •
   <a href="#Screenshot">Screenshot</a>
 </p>
