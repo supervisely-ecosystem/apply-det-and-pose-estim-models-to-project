@@ -46,7 +46,7 @@ Application key points:
 
 3. [Serve ViTPose](https://ecosystem.supervise.ly/apps/yolov5/vitpose/serve) - app with ViTPose pose estimation models
 
-<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/yolov5/vitpose/serve" width="300px"/>
+<img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/vitpose/serve" width="300px"/>
 
 # Result
 
