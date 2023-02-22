@@ -69,7 +69,7 @@ pose_model_data = {}
 
 
 ### 1. Dataset selection
-dataset_selector = SelectDataset(project_id=project_id, multiselect=True)
+dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True)
 download_data_button = Button("Download data")
 download_done = DoneLabel("Successfully downloaded input data")
 download_done.hide()
