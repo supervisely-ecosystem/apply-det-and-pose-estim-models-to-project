@@ -70,9 +70,9 @@ pose_model_data = {}
 
 ### 1. Dataset selection
 dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True)
-download_data_button = Button("Download data")
-download_done = DoneLabel("Successfully downloaded input data")
-download_done.hide()
+select_data_button = Button("Select data")
+select_done = DoneLabel("Successfully selected input data")
+select_done.hide()
 reselect_data_button = Button(
     '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>Reselect data',
     button_type="warning",
@@ -83,8 +83,8 @@ reselect_data_button.hide()
 project_settings_content = Container(
     [
         dataset_selector,
-        download_data_button,
-        download_done,
+        select_data_button,
+        select_done,
         reselect_data_button,
     ]
 )
@@ -423,9 +423,9 @@ def on_dataset_selected(new_dataset_ids):
         output_project_name_input.set_value(value=project_info.name + " (keypoints prediction)")
 
 
-@download_data_button.click
+@select_data_button.click
 def download_input_data():
-    download_data_button.loading = True
+    select_data_button.loading = True
     dataset_selector.disable()
     # download input project to ouput project directory
     if os.path.exists(g.output_project_dir):
@@ -437,11 +437,11 @@ def download_input_data():
         dataset_ids=dataset_ids,
         log_progress=True,
         save_image_info=True,
-        save_images=True,
+        save_images=False,
     )
-    download_data_button.loading = False
-    download_data_button.hide()
-    download_done.show()
+    select_data_button.loading = False
+    select_data_button.hide()
+    select_done.show()
     reselect_data_button.show()
     card_connect_det_model.unlock()
     card_connect_det_model.uncollapse()
@@ -449,9 +449,9 @@ def download_input_data():
 
 @reselect_data_button.click
 def redownload_input_data():
-    download_data_button.show()
+    select_data_button.show()
     reselect_data_button.hide()
-    download_done.hide()
+    select_done.hide()
     dataset_selector.enable()
 
 
@@ -559,7 +559,10 @@ def draw_inference_preview(image_info, mode, det_settings, pose_settings=None):
         preview_pose_ann_objects = preview_pose_ann["objects"].copy()
         # filter object classes in annotation according to selected classes
         for object in preview_pose_ann_objects:
-            if object["classTitle"] not in pose_model_data["pose_model_classes"]:
+            if (
+                object["classTitle"] not in pose_model_data["pose_model_classes"]
+                and object["classTitle"] != "animal_keypoints"
+            ):
                 preview_pose_ann["objects"].remove(object)
         preview_pose_ann = sly.Annotation.from_json(preview_pose_ann, preview_project_meta)
         # merge detection and pose estimation annotations
@@ -695,7 +698,9 @@ def redraw_det_preview():
     else:
         id = select_det_preview.get_value()
         preview_image_info = api.image.get_info_by_id(id=id)
-    draw_inference_preview(preview_image_info, mode="det", det_settings=det_model_data["det_inference_settings"])
+    det_inference_settings = det_settings_editor.get_text()
+    det_inference_settings = yaml.safe_load(det_inference_settings)
+    draw_inference_preview(preview_image_info, mode="det", det_settings=det_inference_settings)
     det_labeled_image.show()
     card_det_image_preview.loading = False
 
@@ -764,7 +769,11 @@ def select_pose_classes():
     pose_classes_done.show()
     select_other_pose_classes_button.show()
     # delete unselected classes
-    pose_classes_collection = [cls["title"] for cls in pose_model_data["pose_model_meta"].to_json()["classes"]]
+    pose_classes_collection = [
+        cls["title"]
+        for cls in pose_model_data["pose_model_meta"].to_json()["classes"]
+        if cls["title"] != "animal_keypoints"
+    ]
     pose_classes_to_delete = [
         cls for cls in pose_classes_collection if cls not in pose_model_data["pose_model_classes"]
     ]
@@ -864,11 +873,13 @@ def redraw_pose_preview():
     else:
         id = select_pose_preview.get_value()
         preview_image_info = api.image.get_info_by_id(id=id)
+    pose_inference_settings = pose_settings_editor.get_text()
+    pose_inference_settings = yaml.safe_load(pose_inference_settings)
     draw_inference_preview(
         preview_image_info,
         mode="pose",
         det_settings=det_model_data["det_inference_settings"],
-        pose_settings=pose_model_data["pose_inference_settings"],
+        pose_settings=pose_inference_settings,
     )
     pose_labeled_image.show()
     card_pose_image_preview.loading = False
@@ -907,12 +918,14 @@ def apply_models_to_project():
             )
             # filter detected bboxes according to selected classes
             detected_bboxes = []
+            detected_classes = []
             det_annotation = det_predictions["annotation"]
             det_ann_objects = det_annotation["objects"].copy()
             for object in det_ann_objects:
                 if object["classTitle"] not in det_model_data["det_model_classes"]:
                     det_annotation["objects"].remove(object)
                 else:
+                    detected_classes.append(object["classTitle"])
                     coordinates = object["points"]["exterior"]
                     det_bbox = {
                         "bbox": [coordinates[0][0], coordinates[0][1], coordinates[1][0], coordinates[1][1], 1.0]
@@ -921,6 +934,7 @@ def apply_models_to_project():
             det_annotation = sly.Annotation.from_json(det_annotation, output_project_meta)
             # apply pose estimation model to image
             pose_inference_settings["detected_bboxes"] = detected_bboxes
+            pose_inference_settings["detected_classes"] = detected_classes
             pose_predictions = api.task.send_request(
                 pose_session_id,
                 "inference_image_id",
@@ -929,7 +943,10 @@ def apply_models_to_project():
             # filter detected keypoints according to selected classes
             pose_annotation = pose_predictions["annotation"]
             for object in pose_annotation["objects"]:
-                if object["classTitle"] not in pose_model_data["pose_model_classes"]:
+                if (
+                    object["classTitle"] not in pose_model_data["pose_model_classes"]
+                    and object["classTitle"] != "animal_keypoints"
+                ):
                     pose_annotation["objects"].remove(object)
             pose_annotation = sly.Annotation.from_json(pose_annotation, output_project_meta)
             # merge detection and pose estimation annotations
