@@ -417,6 +417,10 @@ app = sly.Application(
 
 @dataset_selector.value_changed
 def on_dataset_selected(new_dataset_ids):
+    if new_dataset_ids == []:
+        select_data_button.hide()
+    elif new_dataset_ids != [] and select_data_button.is_hidden():
+        select_data_button.show()
     update_globals(new_dataset_ids)
     if project_info is not None:
         # set default output project name
