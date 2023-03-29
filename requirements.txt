@@ -1,2 +1,2 @@
-supervisely
+supervisely==6.70.13
 PyYAML
