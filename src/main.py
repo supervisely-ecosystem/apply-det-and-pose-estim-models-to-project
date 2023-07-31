@@ -1,6 +1,4 @@
 import os
-from pathlib import Path
-import numpy as np
 import random
 import supervisely as sly
 import src.globals as g
@@ -424,7 +422,8 @@ def on_dataset_selected(new_dataset_ids):
     update_globals(new_dataset_ids)
     if project_info is not None:
         # set default output project name
-        output_project_name_input.set_value(value=project_info.name + " (keypoints prediction)")
+        output_project_name = project_info.name + " (keypoints prediction)"
+        output_project_name_input.set_value(value=api.project.get_free_name(workspace_id, output_project_name))
 
 
 @select_data_button.click
@@ -675,7 +674,7 @@ def save_det_settings():
 
 @det_is_random_preview.value_changed
 def select_det_preview_image(value):
-    if value == False:
+    if value is False:
         select_det_preview.enable()
         select_det_preview.set(items=[Select.Item(image_info.id, image_info.name) for image_info in images_info])
     else:
@@ -850,7 +849,7 @@ def save_pose_settings():
 
 @pose_is_random_preview.value_changed
 def select_pose_preview_image(value):
-    if value == False:
+    if value is False:
         select_pose_preview.enable()
         select_pose_preview.set(items=[Select.Item(image_info.id, image_info.name) for image_info in images_info])
     else:
