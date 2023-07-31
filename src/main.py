@@ -1,6 +1,4 @@
 import os
-from pathlib import Path
-import numpy as np
 import random
 import supervisely as sly
 import src.globals as g
@@ -424,7 +422,28 @@ def on_dataset_selected(new_dataset_ids):
     update_globals(new_dataset_ids)
     if project_info is not None:
         # set default output project name
-        output_project_name_input.set_value(value=project_info.name + " (keypoints prediction)")
+        # output_project_name_input.set_value(value=project_info.name + " (keypoints prediction)")
+        update_output_project_name()
+
+
+def update_output_project_name():
+    selected_pose_classes = pose_classes_table.get_selected_classes()
+
+    if not selected_pose_classes:
+        project_syffix = " (keypoints prediction)"
+
+    else:
+        selected_pose_classes = selected_pose_classes[:3] if len(selected_pose_classes) > 3 else selected_pose_classes
+        selected_pose_classes = [class_name.split("_")[0] for class_name in selected_pose_classes]
+
+        if len(selected_pose_classes) == 1:
+            project_syffix = f" ({selected_pose_classes[0]} keypoints prediction)"
+        else:
+            project_syffix = (
+                f" ({', '.join(selected_pose_classes[:-1])} and {selected_pose_classes[-1]} keypoints prediction)"
+            )
+
+    output_project_name_input.set_value(value=project_info.name + project_syffix)
 
 
 @select_data_button.click
@@ -675,7 +694,7 @@ def save_det_settings():
 
 @det_is_random_preview.value_changed
 def select_det_preview_image(value):
-    if value == False:
+    if value is False:
         select_det_preview.enable()
         select_det_preview.set(items=[Select.Item(image_info.id, image_info.name) for image_info in images_info])
     else:
@@ -813,6 +832,8 @@ def select_pose_classes():
     card_pose_image_preview.uncollapse()
     card_pose_image_preview.unlock()
 
+    update_output_project_name()
+
 
 @select_other_pose_classes_button.click
 def select_other_pose_classes():
@@ -850,7 +871,7 @@ def save_pose_settings():
 
 @pose_is_random_preview.value_changed
 def select_pose_preview_image(value):
-    if value == False:
+    if value is False:
         select_pose_preview.enable()
         select_pose_preview.set(items=[Select.Item(image_info.id, image_info.name) for image_info in images_info])
     else:
