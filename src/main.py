@@ -22,6 +22,7 @@ from supervisely.app.widgets import (
     Editor,
     Select,
     Checkbox,
+    RadioGroup,
 )
 
 
@@ -89,7 +90,48 @@ project_settings_content = Container(
 card_project_settings = Card(title="Dataset selection", content=project_settings_content)
 
 
-### 2. Connect to detection model
+### 2. Method of getting bounding boxes selection
+select_det_method = RadioGroup(
+    items=[
+        RadioGroup.Item(value="use pretrained detection model to label images with bounding boxes"),
+        RadioGroup.Item(value="use existing bounding boxes if images are already labeled with bounding boxes"),
+    ],
+    direction="vertical",
+)
+det_existing_classes_table = ClassesTable()
+det_existing_classes_table_f = Field(det_existing_classes_table, "Select which classes from project to use")
+det_existing_classes_table_f.hide()
+select_det_method_button = Button("Save")
+select_det_method_done = DoneLabel("Successfully selected method of getting bounding boxes")
+select_det_method_done.hide()
+change_det_method_button = Button(
+    '<i style="margin-right: 5px" class="zmdi zmdi-rotate-left"></i>change method of getting bounding boxes',
+    button_type="warning",
+    button_size="small",
+    plain=True,
+)
+change_det_method_button.hide()
+select_det_method_content = Container(
+    [
+        select_det_method,
+        det_existing_classes_table_f,
+        select_det_method_button,
+        select_det_method_done,
+        change_det_method_button,
+    ]
+)
+card_select_det_method = Card(
+    title="Select method of getting bounding boxes",
+    description="You can use pretrained object detection model or existing annotation",
+    content=select_det_method_content,
+    collapsable=True,
+    lock_message="Complete the previous step to unlock",
+)
+card_select_det_method.collapse()
+card_select_det_method.lock()
+
+
+### 3. Connect to detection model
 select_det_model = SelectAppSession(team_id=team_id, tags=["deployed_nn"])
 connect_det_model_button = Button(
     text='<i style="margin-right: 5px" class="zmdi zmdi-power"></i>connect to detection model',
@@ -125,7 +167,7 @@ card_connect_det_model.collapse()
 card_connect_det_model.lock()
 
 
-### 3. Detection model classes
+### 4. Detection model classes
 det_classes_table = ClassesTable()
 select_det_classes_button = Button("select classes")
 select_det_classes_button.hide()
@@ -157,7 +199,7 @@ card_det_model_classes.collapse()
 card_det_model_classes.lock()
 
 
-### 4.1 Detection settings
+### 5.1 Detection settings
 det_settings_editor = Editor(language_mode="yaml", height_lines=30)
 save_det_settings_button = Button("save detection settings")
 reselect_det_settings_button = Button(
@@ -187,7 +229,7 @@ card_det_settings.collapse()
 card_det_settings.lock()
 
 
-### 4.2 Detection inference preview
+### 5.2 Detection inference preview
 det_line_thickness = InputNumber(value=7, min=1, max=14)
 det_line_thickness_f = Field(det_line_thickness, "Line thickness")
 det_redraw_image_button = Button(
@@ -228,7 +270,7 @@ det_settings_preview_content = Container(
 )
 
 
-### 5. Connect to pose estimation model
+### 6. Connect to pose estimation model
 select_pose_model = SelectAppSession(team_id=team_id, tags=["deployed_nn_keypoints"])
 connect_pose_model_button = Button(
     text='<i style="margin-right: 5px" class="zmdi zmdi-power"></i>connect to pose estimation model',
@@ -264,7 +306,7 @@ card_connect_pose_model.collapse()
 card_connect_pose_model.lock()
 
 
-### 6. Pose estimation model classes
+### 7. Pose estimation model classes
 pose_classes_table = ClassesTable()
 select_pose_classes_button = Button("select classes")
 select_pose_classes_button.hide()
@@ -296,7 +338,7 @@ card_pose_model_classes.collapse()
 card_pose_model_classes.lock()
 
 
-### 7.1 Pose estimation settings
+### 8.1 Pose estimation settings
 pose_settings_editor = Editor(language_mode="yaml", height_lines=30)
 save_pose_settings_button = Button("save pose estimation settings")
 reselect_pose_settings_button = Button(
@@ -326,7 +368,7 @@ card_pose_settings.collapse()
 card_pose_settings.lock()
 
 
-### 7.2 Pose estimation inference preview
+### 8.2 Pose estimation inference preview
 pose_line_thickness = InputNumber(value=7, min=1, max=14)
 pose_line_thickness_f = Field(pose_line_thickness, "Line thickness")
 pose_redraw_image_button = Button(
@@ -367,7 +409,7 @@ pose_settings_preview_content = Container(
 )
 
 
-### 8. Output project
+### 9. Output project
 output_project_name_input = Input(value="Labeled project")
 output_project_name_input_f = Field(output_project_name_input, "Output project name")
 apply_models_to_project_button = Button("APPLY MODELS TO PROJECT")
@@ -400,6 +442,7 @@ app = sly.Application(
     layout=Container(
         widgets=[
             card_project_settings,
+            card_select_det_method,
             card_connect_det_model,
             card_det_model_classes,
             det_settings_preview_content,
@@ -446,8 +489,10 @@ def download_input_data():
     select_data_button.hide()
     select_done.show()
     reselect_data_button.show()
-    card_connect_det_model.unlock()
-    card_connect_det_model.uncollapse()
+    # card_connect_det_model.unlock()
+    # card_connect_det_model.uncollapse()
+    card_select_det_method.unlock()
+    card_select_det_method.uncollapse()
 
 
 @reselect_data_button.click
@@ -456,6 +501,71 @@ def redownload_input_data():
     reselect_data_button.hide()
     select_done.hide()
     dataset_selector.enable()
+
+
+@select_det_method.value_changed
+def change_det_method(value):
+    if value == "use existing bounding boxes if images are already labeled with bounding boxes":
+        det_existing_classes_table.read_meta(project_meta)
+        det_existing_classes_table_f.show()
+        card_connect_det_model.hide()
+        card_det_model_classes.hide()
+        det_settings_preview_content.hide()
+    else:
+        card_connect_det_model.show()
+        card_det_model_classes.show()
+        det_settings_preview_content.show()
+        det_existing_classes_table_f.hide()
+
+
+@select_det_method_button.click
+def det_method_select():
+    method = select_det_method.get_value()
+    problem = False
+    if method == "use pretrained detection model to label images with bounding boxes":
+        card_connect_det_model.unlock()
+        card_connect_det_model.uncollapse()
+    else:
+        selected_classes = det_existing_classes_table.get_selected_classes()
+        if len(selected_classes) < 1:
+            sly.app.show_dialog(
+                title="At least 1 class must be selected",
+                description="Please, select at least 1 class of shape rectangle in the classes table",
+                status="warning",
+            )
+            problem = True
+        else:
+            selected_shapes = [cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes]
+            if "rectangle" not in selected_shapes:
+                sly.app.show_dialog(
+                    title="There are no classes of shape rectangle in the list of selected classes",
+                    description="Please, select at least 1 class of shape rectangle or change input data",
+                    status="warning",
+                )
+                problem = True
+            else:
+                card_connect_pose_model.unlock()
+                card_connect_pose_model.uncollapse()
+                det_existing_classes_table.disable()
+    if not problem:
+        select_det_method_button.hide()
+        select_det_method_done.show()
+        change_det_method_button.show()
+
+
+@change_det_method_button.click
+def det_method_reselect():
+    method = select_det_method.get_value()
+    if method == "use pretrained detection model to label images with bounding boxes":
+        card_connect_det_model.lock()
+        card_connect_det_model.collapse()
+    else:
+        card_connect_pose_model.lock()
+        card_connect_pose_model.collapse()
+    select_det_method_button.show()
+    select_det_method_done.hide()
+    change_det_method_button.hide()
+    det_existing_classes_table.enable()
 
 
 @connect_det_model_button.click
@@ -517,19 +627,26 @@ def get_random_image(images_info):
 
 # function for drawing inference previews
 def draw_inference_preview(image_info, mode, det_settings, pose_settings=None):
+    method = select_det_method.get_value()
     # get det annotation
-    preview_det_predictions = api.task.send_request(
-        det_model_data["det_session_id"],
-        "inference_image_id",
-        data={"image_id": image_info.id, "settings": det_settings},
-        timeout=500,
-    )
-    preview_det_ann = preview_det_predictions["annotation"]
+    if method == "use pretrained detection model to label images with bounding boxes":
+        preview_det_predictions = api.task.send_request(
+            det_model_data["det_session_id"],
+            "inference_image_id",
+            data={"image_id": image_info.id, "settings": det_settings},
+            timeout=500,
+        )
+        preview_det_ann = preview_det_predictions["annotation"]
+        det_classes = det_model_data["det_model_classes"]
+    else:
+        preview_det_ann = api.annotation.download_json(image_info.id)
+        det_classes = det_existing_classes_table.get_selected_classes()
     preview_det_ann_objects = preview_det_ann["objects"].copy()
     # filter object classes in annotation according to selected classes
     preview_bboxes = []
+    
     for object in preview_det_ann_objects:
-        if object["classTitle"] not in det_model_data["det_model_classes"]:
+        if object["classTitle"] not in det_classes:
             preview_det_ann["objects"].remove(object)
         else:
             # save predicted bounding boxes to detect keypoints inside them using pose estimation model
@@ -798,7 +915,13 @@ def select_pose_classes():
     card_pose_settings.uncollapse()
     card_pose_image_preview.loading = True
     # merge preview project meta with pose model meta
-    global preview_project_meta
+    global preview_project_meta, images_info
+    if select_det_method.get_value() == "use existing bounding boxes if images are already labeled with bounding boxes":
+        preview_project_meta = project_meta
+        images_info = []
+        for dataset_info in api.dataset.get_list(project_id):
+            images_info.extend(api.image.get_list(dataset_info.id))
+        det_model_data["det_inference_settings"] = {}
     preview_project_meta = preview_project_meta.merge(pose_model_data["pose_model_meta"])
     preview_image_info = get_random_image(images_info)
     # draw pose estimation preview
@@ -890,17 +1013,25 @@ def redraw_pose_preview():
 
 @apply_models_to_project_button.click
 def apply_models_to_project():
+    method = select_det_method.get_value()
     apply_models_to_project_button.loading = True
     output_project_name_input.enable_readonly()
     output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
     # merge output project meta with model metas
-    meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
+    global images_info
+    if method == "use pretrained detection model to label images with bounding boxes":
+        meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
+    else:
+        meta_with_det = project_meta
+        images_info = []
+        for dataset_info in api.dataset.get_list(project_id):
+            images_info.extend(api.image.get_list(dataset_info.id))
     output_project.set_meta(meta_with_det)
     meta_with_pose = output_project.meta.merge(pose_model_data["pose_model_meta"])
     output_project.set_meta(meta_with_pose)
     output_project_meta = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ).meta
-    # define session ids
-    det_session_id = det_model_data["det_session_id"]
+    if method == "use pretrained detection model to label images with bounding boxes":
+        det_session_id = det_model_data["det_session_id"]
     pose_session_id = pose_model_data["pose_session_id"]
     # define inference settings
     det_inference_settings = det_model_data["det_inference_settings"]
@@ -913,19 +1044,24 @@ def apply_models_to_project():
     # apply models to project
     with apply_progress_bar(message="Applying models to project...", total=len(images_info)) as pbar:
         for image_info in images_info:
-            # apply detection model to image
-            det_predictions = api.task.send_request(
-                det_session_id,
-                "inference_image_id",
-                data={"image_id": image_info.id, "settings": det_inference_settings},
-            )
+            if method == "use pretrained detection model to label images with bounding boxes":
+                # apply detection model to image
+                det_predictions = api.task.send_request(
+                    det_session_id,
+                    "inference_image_id",
+                    data={"image_id": image_info.id, "settings": det_inference_settings},
+                )
+                det_annotation = det_predictions["annotation"]
+                det_classes = det_model_data["det_model_classes"]
+            else:
+                det_annotation = api.annotation.download_json(image_info.id)
+                det_classes = det_existing_classes_table.get_selected_classes()
             # filter detected bboxes according to selected classes
             detected_bboxes = []
             detected_classes = []
-            det_annotation = det_predictions["annotation"]
             det_ann_objects = det_annotation["objects"].copy()
             for object in det_ann_objects:
-                if object["classTitle"] not in det_model_data["det_model_classes"]:
+                if object["classTitle"] not in det_classes:
                     det_annotation["objects"].remove(object)
                 else:
                     detected_classes.append(object["classTitle"])

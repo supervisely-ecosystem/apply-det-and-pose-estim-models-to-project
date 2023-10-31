@@ -10,7 +10,10 @@ app_data_dir = os.path.join(app_root_directory, "tempfiles")
 output_project_dir = os.path.join(app_data_dir, "output_project_dir")
 static_dir = Path(os.path.join(app_data_dir, "preview_files"))
 
-app_session_id = sly.io.env.task_id()
+if sly.is_production():
+    app_session_id = sly.io.env.task_id()
+else:
+    app_session_id = 777
 
 local_det_preview_path = os.path.join(static_dir, "det_labeled.jpg")
 remote_det_preview_path = os.path.join(
