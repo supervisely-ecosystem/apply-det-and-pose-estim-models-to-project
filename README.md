@@ -55,4 +55,4 @@ Application key points:
 
 # Screenshot
 
-<img src="https://user-images.githubusercontent.com/97401023/220318528-927b79e2-6be0-4c93-ae01-c9def973bed7.png" style="width: 100%;"/>
+<img src="https://user-images.githubusercontent.com/91027877/279475940-e9efe3ba-dfcb-4348-836d-7876cfcb7d7e.png" style="width: 100%;"/>
