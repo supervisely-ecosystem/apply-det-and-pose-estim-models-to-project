@@ -515,11 +515,13 @@ def change_det_method(value):
         card_connect_det_model.show()
         card_det_model_classes.show()
         det_settings_preview_content.show()
+        det_existing_classes_table_f.hide()
 
 
 @select_det_method_button.click
 def det_method_select():
     method = select_det_method.get_value()
+    problem = False
     if method == "use pretrained detection model to label images with bounding boxes":
         card_connect_det_model.unlock()
         card_connect_det_model.uncollapse()
@@ -531,6 +533,7 @@ def det_method_select():
                 description="Please, select at least 1 class of shape rectangle in the classes table",
                 status="warning",
             )
+            problem = True
         else:
             selected_shapes = [cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes]
             if "rectangle" not in selected_shapes:
@@ -539,13 +542,30 @@ def det_method_select():
                     description="Please, select at least 1 class of shape rectangle or change input data",
                     status="warning",
                 )
+                problem = True
             else:
                 card_connect_pose_model.unlock()
                 card_connect_pose_model.uncollapse()
-                select_det_method_button.hide()
-                select_det_method_done.show()
-                change_det_method_button.show()
                 det_existing_classes_table.disable()
+    if not problem:
+        select_det_method_button.hide()
+        select_det_method_done.show()
+        change_det_method_button.show()
+
+
+@change_det_method_button.click
+def det_method_reselect():
+    method = select_det_method.get_value()
+    if method == "use pretrained detection model to label images with bounding boxes":
+        card_connect_det_model.lock()
+        card_connect_det_model.collapse()
+    else:
+        card_connect_pose_model.lock()
+        card_connect_pose_model.collapse()
+    select_det_method_button.show()
+    select_det_method_done.hide()
+    change_det_method_button.hide()
+    det_existing_classes_table.enable()
 
 
 @connect_det_model_button.click
@@ -895,7 +915,7 @@ def select_pose_classes():
     card_pose_settings.uncollapse()
     card_pose_image_preview.loading = True
     # merge preview project meta with pose model meta
-    global preview_project_meta
+    global preview_project_meta, images_info
     if select_det_method.get_value() == "use existing bounding boxes if images are already labeled with bounding boxes":
         preview_project_meta = project_meta
         images_info = []
@@ -998,6 +1018,7 @@ def apply_models_to_project():
     output_project_name_input.enable_readonly()
     output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
     # merge output project meta with model metas
+    global images_info
     if method == "use pretrained detection model to label images with bounding boxes":
         meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
     else:
