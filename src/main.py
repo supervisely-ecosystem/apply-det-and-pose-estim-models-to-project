@@ -993,17 +993,24 @@ def redraw_pose_preview():
 
 @apply_models_to_project_button.click
 def apply_models_to_project():
+    method = select_det_method.get_value()
     apply_models_to_project_button.loading = True
     output_project_name_input.enable_readonly()
     output_project = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ)
     # merge output project meta with model metas
-    meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
+    if method == "use pretrained detection model to label images with bounding boxes":
+        meta_with_det = output_project.meta.merge(det_model_data["det_model_meta"])
+    else:
+        meta_with_det = project_meta
+        images_info = []
+        for dataset_info in api.dataset.get_list(project_id):
+            images_info.extend(api.image.get_list(dataset_info.id))
     output_project.set_meta(meta_with_det)
     meta_with_pose = output_project.meta.merge(pose_model_data["pose_model_meta"])
     output_project.set_meta(meta_with_pose)
     output_project_meta = sly.Project(g.output_project_dir, mode=sly.OpenMode.READ).meta
-    # define session ids
-    det_session_id = det_model_data["det_session_id"]
+    if method == "use pretrained detection model to label images with bounding boxes":
+        det_session_id = det_model_data["det_session_id"]
     pose_session_id = pose_model_data["pose_session_id"]
     # define inference settings
     det_inference_settings = det_model_data["det_inference_settings"]
@@ -1016,19 +1023,24 @@ def apply_models_to_project():
     # apply models to project
     with apply_progress_bar(message="Applying models to project...", total=len(images_info)) as pbar:
         for image_info in images_info:
-            # apply detection model to image
-            det_predictions = api.task.send_request(
-                det_session_id,
-                "inference_image_id",
-                data={"image_id": image_info.id, "settings": det_inference_settings},
-            )
+            if method == "use pretrained detection model to label images with bounding boxes":
+                # apply detection model to image
+                det_predictions = api.task.send_request(
+                    det_session_id,
+                    "inference_image_id",
+                    data={"image_id": image_info.id, "settings": det_inference_settings},
+                )
+                det_annotation = det_predictions["annotation"]
+                det_classes = det_model_data["det_model_classes"]
+            else:
+                det_annotation = api.annotation.download_json(image_info.id)
+                det_classes = det_existing_classes_table.get_selected_classes()
             # filter detected bboxes according to selected classes
             detected_bboxes = []
             detected_classes = []
-            det_annotation = det_predictions["annotation"]
             det_ann_objects = det_annotation["objects"].copy()
             for object in det_ann_objects:
-                if object["classTitle"] not in det_model_data["det_model_classes"]:
+                if object["classTitle"] not in det_classes:
                     det_annotation["objects"].remove(object)
                 else:
                     detected_classes.append(object["classTitle"])
