@@ -26,9 +26,10 @@ Application allows you to Label project's Images using Detection Model and addit
 
 Application key points:
 
-- Select datasets to label 
-- Select classes of Detection Model 
-- Preview detection results
+- Select datasets to label
+- Select method of getting bounding boxes - you can use pretrained object detection model or use existing annotation
+- Select classes of Detection Model (if using pretrained object detection model)
+- Preview detection results (if using pretrained object detection model)
 - Select classes of Pose Estimation Model 
 - Preview pose estimation results
 - Adjust inference settings for models
