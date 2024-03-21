@@ -7,3 +7,5 @@ src/test_3.py
 src/test_4.py
 src/test_5.py
 tempfiles/
+venv
+.venv

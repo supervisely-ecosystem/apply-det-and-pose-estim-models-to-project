@@ -3,7 +3,9 @@ from pathlib import Path
 import supervisely as sly
 from dotenv import load_dotenv
 
-load_dotenv("local.env")
+if sly.is_development():
+    load_dotenv("local.env")
+    load_dotenv(os.path.expanduser("~/supervisely.env"))
 
 app_root_directory = str(Path(__file__).parent.absolute().parents[0])
 app_data_dir = os.path.join(app_root_directory, "tempfiles")
@@ -17,14 +19,16 @@ else:
 
 local_det_preview_path = os.path.join(static_dir, "det_labeled.jpg")
 remote_det_preview_path = os.path.join(
-    "Apply_Detection_and_Pose_Estimation_Models_to_Images_Project",
+    sly.output.RECOMMENDED_EXPORT_PATH,
+    sly.app.fastapi.get_name_from_env(),
     str(app_session_id),
     "det_preview.jpg",
 )
 
 local_pose_preview_path = os.path.join(static_dir, "pose_labeled.jpg")
 remote_pose_preview_path = os.path.join(
-    "Apply_Detection_and_Pose_Estimation_Models_to_Images_Project",
+    sly.output.RECOMMENDED_EXPORT_PATH,
+    sly.app.fastapi.get_name_from_env(),
     str(app_session_id),
     "pose_preview.jpg",
 )
