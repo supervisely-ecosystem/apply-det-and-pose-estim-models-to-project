@@ -30,6 +30,8 @@ from supervisely.app.widgets import (
 def update_globals(new_dataset_ids):
     global dataset_ids, project_id, workspace_id, project_info, project_meta
     dataset_ids = new_dataset_ids
+    if dataset_ids == [None]:
+        dataset_ids = None
     if dataset_ids:
         project_id = api.dataset.get_info_by_id(dataset_ids[0]).project_id
         workspace_id = api.project.get_info_by_id(project_id).workspace_id
@@ -40,6 +42,7 @@ def update_globals(new_dataset_ids):
         workspace_id = api.project.get_info_by_id(project_id).workspace_id
         project_info = api.project.get_info_by_id(project_id)
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
+        dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
     else:
         print("All globals set to None")
         dataset_ids = []
@@ -471,11 +474,21 @@ def on_dataset_selected(new_dataset_ids):
 
 @select_data_button.click
 def download_input_data():
+    global dataset_ids, project_id, workspace_id
     select_data_button.loading = True
     dataset_selector.disable()
     # download input project to ouput project directory
     if os.path.exists(g.output_project_dir):
         sly.fs.clean_dir(g.output_project_dir)
+    if dataset_ids is None or dataset_ids == []:
+        proj_id = dataset_selector.get_selected_project_id()
+        if project_id is None:
+            project_id = proj_id
+        if workspace_id is None:
+            project_info = api.project.get_info_by_id(project_id)
+            workspace_id = project_info.workspace_id
+        if proj_id:
+            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
     sly.download_project(
         api=api,
         project_id=project_id,
@@ -747,6 +760,9 @@ def select_det_classes():
     # define images info
     images_info = []
     for dataset_info in api.dataset.get_list(project_id):
+        if dataset_ids and dataset_info != [None]:
+            if dataset_info.id not in dataset_ids:
+                continue
         images_info.extend(api.image.get_list(dataset_info.id))
     preview_image_info = get_random_image(images_info)
     # draw detection preview
@@ -920,6 +936,9 @@ def select_pose_classes():
         preview_project_meta = project_meta
         images_info = []
         for dataset_info in api.dataset.get_list(project_id):
+            if dataset_ids and dataset_info != [None]:
+                if dataset_info.id not in dataset_ids:
+                    continue
             images_info.extend(api.image.get_list(dataset_info.id))
         det_model_data["det_inference_settings"] = {}
     preview_project_meta = preview_project_meta.merge(pose_model_data["pose_model_meta"])
@@ -1025,6 +1044,9 @@ def apply_models_to_project():
         meta_with_det = project_meta
         images_info = []
         for dataset_info in api.dataset.get_list(project_id):
+            if dataset_ids and dataset_info != [None]:
+                if dataset_info.id not in dataset_ids:
+                    continue
             images_info.extend(api.image.get_list(dataset_info.id))
     output_project.set_meta(meta_with_det)
     meta_with_pose = output_project.meta.merge(pose_model_data["pose_model_meta"])
@@ -1039,6 +1061,9 @@ def apply_models_to_project():
     # get datasets info
     datasets_info = {}
     for dataset_info in api.dataset.get_list(project_id):
+        if dataset_ids and dataset_info != [None]:
+            if dataset_info.id not in dataset_ids:
+                continue
         dataset_dir = os.path.join(g.output_project_dir, dataset_info.name)
         datasets_info[dataset_info.id] = sly.Dataset(dataset_dir, mode=sly.OpenMode.READ)
     # apply models to project
@@ -1114,4 +1139,4 @@ def apply_models_to_project():
     api.file.remove(team_id, "/" + g.remote_pose_preview_path)
     sly.io.fs.remove_dir(g.app_data_dir)
     sly.logger.info("Project was successfully labeled")
-    app.shutdown()
+    app.stop()
