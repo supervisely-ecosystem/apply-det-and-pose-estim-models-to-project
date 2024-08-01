@@ -484,20 +484,20 @@ def download_input_data():
         proj_id = dataset_selector.get_selected_project_id()
         if project_id is None:
             project_id = proj_id
-        if workspace_id is None:
-            project_info = api.project.get_info_by_id(project_id)
-            if project_info is None:
-                sly.app.show_dialog(
-                    title="Project not found",
-                    description="Please, please select another project or reload the page and try again",
-                    status="error",
-                )
-                select_data_button.loading = False
-                dataset_selector.enable()
-                return
-            workspace_id = project_info.workspace_id
         if proj_id:
             dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
+    project_info = api.project.get_info_by_id(project_id)
+    if project_info is None:
+        sly.app.show_dialog(
+            title="Project not found",
+            description="Please, please select another project or reload the page and try again",
+            status="error",
+        )
+        select_data_button.loading = False
+        dataset_selector.enable()
+        return
+    if workspace_id is None:
+        workspace_id = project_info.workspace_id
     sly.download_project(
         api=api,
         project_id=project_id,
