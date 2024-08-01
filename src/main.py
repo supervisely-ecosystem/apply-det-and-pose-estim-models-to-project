@@ -71,7 +71,7 @@ pose_model_data = {}
 
 
 ### 1. Dataset selection
-dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True)
+dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True, allowed_project_types=[sly.ProjectType.IMAGES])
 select_data_button = Button("Select data")
 select_done = DoneLabel("Successfully selected input data")
 select_done.hide()
@@ -486,6 +486,15 @@ def download_input_data():
             project_id = proj_id
         if workspace_id is None:
             project_info = api.project.get_info_by_id(project_id)
+            if project_info is None:
+                sly.app.show_dialog(
+                    title="Project not found",
+                    description="Please, please select another project or reload the page and try again",
+                    status="error",
+                )
+                select_data_button.loading = False
+                dataset_selector.enable()
+                return
             workspace_id = project_info.workspace_id
         if proj_id:
             dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
