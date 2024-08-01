@@ -26,6 +26,13 @@ from supervisely.app.widgets import (
 )
 
 
+def not_found_dialog(entity_type: str):
+    sly.app.show_dialog(
+        title=f"{entity_type.capitalize()} not found",
+        description=f"Please, please select another {entity_type} or reload the page and try again",
+        status="error",
+    )
+
 # function for updating global variables
 def update_globals(new_dataset_ids):
     global dataset_ids, project_id, workspace_id, project_info, project_meta
@@ -35,20 +42,12 @@ def update_globals(new_dataset_ids):
     if dataset_ids:
         dataset = api.dataset.get_info_by_id(dataset_ids[0])
         if dataset is None:
-            sly.app.show_dialog(
-                title="Dataset not found",
-                description="Please, please select another dataset or reload the page and try again",
-                status="error",
-            )
+            not_found_dialog("dataset")
             return
         project_id = dataset.project_id
         project_info = api.project.get_info_by_id(project_id)
         if project_info is None:
-            sly.app.show_dialog(
-                title="Project not found",
-                description="Please, please select another project or reload the page and try again",
-                status="error",
-            )
+            not_found_dialog("project")
             return
         workspace_id = project_info.workspace_id
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
@@ -56,11 +55,7 @@ def update_globals(new_dataset_ids):
     elif project_id:
         project_info = api.project.get_info_by_id(project_id)
         if project_info is None:
-            sly.app.show_dialog(
-                title="Project not found",
-                description="Please, please select another project or reload the page and try again",
-                status="error",
-            )
+            not_found_dialog("project")
             return
         workspace_id = project_info.workspace_id
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
@@ -507,14 +502,16 @@ def download_input_data():
         if project_id is None:
             project_id = proj_id
         if proj_id:
-            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
+            project_info = api.project.get_info_by_id(proj_id)
+            if project_info is None:
+                not_found_dialog("project")
+                select_data_button.loading = False
+                dataset_selector.enable()
+                return
+            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(proj_id)]
     project_info = api.project.get_info_by_id(project_id)
     if project_info is None:
-        sly.app.show_dialog(
-            title="Project not found",
-            description="Please, please select another project or reload the page and try again",
-            status="error",
-        )
+        not_found_dialog("project")
         select_data_button.loading = False
         dataset_selector.enable()
         return
