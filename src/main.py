@@ -33,9 +33,24 @@ def update_globals(new_dataset_ids):
     if dataset_ids == [None]:
         dataset_ids = None
     if dataset_ids:
-        project_id = api.dataset.get_info_by_id(dataset_ids[0]).project_id
-        workspace_id = api.project.get_info_by_id(project_id).workspace_id
+        dataset = api.dataset.get_info_by_id(dataset_ids[0])
+        if dataset is None:
+            sly.app.show_dialog(
+                title="Dataset not found",
+                description="Please, please select another dataset or reload the page and try again",
+                status="error",
+            )
+            return
+        project_id = dataset.project_id
         project_info = api.project.get_info_by_id(project_id)
+        if project_info is None:
+            sly.app.show_dialog(
+                title="Project not found",
+                description="Please, please select another project or reload the page and try again",
+                status="error",
+            )
+            return
+        workspace_id = project_info.workspace_id
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
         print(f"Project is {project_info.name}, {dataset_ids}")
     elif project_id:
