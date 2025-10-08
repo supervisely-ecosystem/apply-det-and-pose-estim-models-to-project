@@ -33,6 +33,7 @@ def not_found_dialog(entity_type: str):
         status="error",
     )
 
+
 # function for updating global variables
 def update_globals(new_dataset_ids):
     global dataset_ids, project_id, workspace_id, project_info, project_meta
@@ -59,7 +60,7 @@ def update_globals(new_dataset_ids):
             return
         workspace_id = project_info.workspace_id
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
-        dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
+        dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id, recursive=True)]
     else:
         print("All globals set to None")
         dataset_ids = []
@@ -88,7 +89,9 @@ pose_model_data = {}
 
 
 ### 1. Dataset selection
-dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True, allowed_project_types=[sly.ProjectType.IMAGES])
+dataset_selector = SelectDataset(
+    project_id=project_id, multiselect=True, select_all_datasets=True, allowed_project_types=[sly.ProjectType.IMAGES]
+)
 select_data_button = Button("Select data")
 select_done = DoneLabel("Successfully selected input data")
 select_done.hide()
@@ -508,7 +511,7 @@ def download_input_data():
                 select_data_button.loading = False
                 dataset_selector.enable()
                 return
-            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(proj_id)]
+            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(proj_id, recursive=True)]
     project_info = api.project.get_info_by_id(project_id)
     if project_info is None:
         not_found_dialog("project")
@@ -576,7 +579,9 @@ def det_method_select():
             )
             problem = True
         else:
-            selected_shapes = [cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes]
+            selected_shapes = [
+                cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes
+            ]
             if "rectangle" not in selected_shapes:
                 sly.app.show_dialog(
                     title="There are no classes of shape rectangle in the list of selected classes",
@@ -685,7 +690,7 @@ def draw_inference_preview(image_info, mode, det_settings, pose_settings=None):
     preview_det_ann_objects = preview_det_ann["objects"].copy()
     # filter object classes in annotation according to selected classes
     preview_bboxes = []
-    
+
     for object in preview_det_ann_objects:
         if object["classTitle"] not in det_classes:
             preview_det_ann["objects"].remove(object)
@@ -787,7 +792,7 @@ def select_det_classes():
     preview_project_meta = preview_project_meta.merge(det_model_data["det_model_meta"])
     # define images info
     images_info = []
-    for dataset_info in api.dataset.get_list(project_id):
+    for dataset_info in api.dataset.get_list(project_id, recursive=True):
         if dataset_ids and dataset_info != [None]:
             if dataset_info.id not in dataset_ids:
                 continue
@@ -963,7 +968,7 @@ def select_pose_classes():
     if select_det_method.get_value() == "use existing bounding boxes if images are already labeled with bounding boxes":
         preview_project_meta = project_meta
         images_info = []
-        for dataset_info in api.dataset.get_list(project_id):
+        for dataset_info in api.dataset.get_list(project_id, recursive=True):
             if dataset_ids and dataset_info != [None]:
                 if dataset_info.id not in dataset_ids:
                     continue
@@ -1071,7 +1076,7 @@ def apply_models_to_project():
     else:
         meta_with_det = project_meta
         images_info = []
-        for dataset_info in api.dataset.get_list(project_id):
+        for dataset_info in api.dataset.get_list(project_id, recursive=True):
             if dataset_ids and dataset_info != [None]:
                 if dataset_info.id not in dataset_ids:
                     continue
@@ -1088,7 +1093,7 @@ def apply_models_to_project():
     pose_inference_settings = pose_model_data["pose_inference_settings"]
     # get datasets info
     datasets_info = {}
-    for dataset_info in api.dataset.get_list(project_id):
+    for dataset_info in api.dataset.get_list(project_id, recursive=True):
         if dataset_ids and dataset_info != [None]:
             if dataset_info.id not in dataset_ids:
                 continue
