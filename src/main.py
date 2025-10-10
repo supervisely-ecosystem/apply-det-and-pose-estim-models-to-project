@@ -13,7 +13,7 @@ from supervisely.app.widgets import (
     Button,
     Field,
     Progress,
-    SelectDataset,
+    SelectDatasetTree,
     Image,
     ModelInfo,
     ClassesTable,
@@ -89,12 +89,11 @@ pose_model_data = {}
 
 
 ### 1. Dataset selection
-dataset_selector = SelectDataset(
+dataset_selector = SelectDatasetTree(
     project_id=project_id,
     multiselect=True,
     select_all_datasets=True,
     allowed_project_types=[sly.ProjectType.IMAGES],
-    include_nested=True,
 )
 select_data_button = Button("Select data")
 select_done = DoneLabel("Successfully selected input data")
