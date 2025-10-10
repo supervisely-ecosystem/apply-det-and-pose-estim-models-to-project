@@ -12,7 +12,7 @@
 </p>
 
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](../../../../supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
 [![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
 [![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project.png)](https://supervisely.com)
@@ -37,15 +37,15 @@ Application key points:
 
 # Related Apps
 
-1. [Serve MMDetection](https://ecosystem.supervisely.com/apps/mmdetection/serve) - app with detection models from MMDetection framework
+1. [Serve MMDetection](../../../../supervisely-ecosystem/mmdetection/serve) - app with detection models from MMDetection framework
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/mmdetection/serve" src="https://user-images.githubusercontent.com/97401023/220325120-2e4aa424-8b5f-4e06-9035-742142a0f3e7.png" width="300px"/>
 
-2. [Serve YOLOv5](https://ecosystem.supervisely.com/apps/yolov5/supervisely/serve) - app with YOLOv5 detection models
+2. [Serve YOLOv5](../../../../supervisely-ecosystem/yolov5/supervisely/serve) - app with YOLOv5 detection models
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/yolov5/supervisely/serve" src="https://user-images.githubusercontent.com/97401023/220324783-380bc2a4-26c2-4c0f-8333-4cf55a9296de.png" width="300px"/>
 
-3. [Serve ViTPose](https://ecosystem.supervisely.com/apps/vitpose/serve) - app with ViTPose pose estimation models
+3. [Serve ViTPose](../../../../supervisely-ecosystem/vitpose/serve) - app with ViTPose pose estimation models
 
 <img data-key="sly-module-link" data-module-slug="supervisely-ecosystem/vitpose/serve" src="https://user-images.githubusercontent.com/97401023/220330365-0a66da95-fdb7-48c0-8a6c-af077b46e70d.png" width="300px"/>
 
