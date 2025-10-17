@@ -13,7 +13,7 @@ from supervisely.app.widgets import (
     Button,
     Field,
     Progress,
-    SelectDataset,
+    SelectDatasetTree,
     Image,
     ModelInfo,
     ClassesTable,
@@ -32,6 +32,7 @@ def not_found_dialog(entity_type: str):
         description=f"Please, please select another {entity_type} or reload the page and try again",
         status="error",
     )
+
 
 # function for updating global variables
 def update_globals(new_dataset_ids):
@@ -59,7 +60,7 @@ def update_globals(new_dataset_ids):
             return
         workspace_id = project_info.workspace_id
         project_meta = sly.ProjectMeta.from_json(api.project.get_meta(project_id))
-        dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id)]
+        dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(project_id, recursive=True)]
     else:
         print("All globals set to None")
         dataset_ids = []
@@ -88,7 +89,12 @@ pose_model_data = {}
 
 
 ### 1. Dataset selection
-dataset_selector = SelectDataset(project_id=project_id, multiselect=True, select_all_datasets=True, allowed_project_types=[sly.ProjectType.IMAGES])
+dataset_selector = SelectDatasetTree(
+    project_id=project_id,
+    multiselect=True,
+    select_all_datasets=True,
+    allowed_project_types=[sly.ProjectType.IMAGES],
+)
 select_data_button = Button("Select data")
 select_done = DoneLabel("Successfully selected input data")
 select_done.hide()
@@ -508,7 +514,7 @@ def download_input_data():
                 select_data_button.loading = False
                 dataset_selector.enable()
                 return
-            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(proj_id)]
+            dataset_ids = [dataset_info.id for dataset_info in api.dataset.get_list(proj_id, recursive=True)]
     project_info = api.project.get_info_by_id(project_id)
     if project_info is None:
         not_found_dialog("project")
@@ -576,7 +582,9 @@ def det_method_select():
             )
             problem = True
         else:
-            selected_shapes = [cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes]
+            selected_shapes = [
+                cls.geometry_type.geometry_name() for cls in project_meta.obj_classes if cls.name in selected_classes
+            ]
             if "rectangle" not in selected_shapes:
                 sly.app.show_dialog(
                     title="There are no classes of shape rectangle in the list of selected classes",
@@ -626,7 +634,7 @@ def connect_to_det_model():
             "get_output_classes_and_tags",
             data={},
         )
-        sly.logger.info(f"Detection model meta: {str(det_model_meta_json)}")
+        # sly.logger.info(f"Detection model meta: {str(det_model_meta_json)}")
         det_model_data["det_model_meta"] = sly.ProjectMeta.from_json(det_model_meta_json)
         det_model_data["det_session_id"] = det_session_id
         # show detection classes table
@@ -685,7 +693,7 @@ def draw_inference_preview(image_info, mode, det_settings, pose_settings=None):
     preview_det_ann_objects = preview_det_ann["objects"].copy()
     # filter object classes in annotation according to selected classes
     preview_bboxes = []
-    
+
     for object in preview_det_ann_objects:
         if object["classTitle"] not in det_classes:
             preview_det_ann["objects"].remove(object)
@@ -750,7 +758,7 @@ def select_det_classes():
     det_classes_table.disable()
     # get selected classes for detection model
     det_model_data["det_model_classes"] = det_classes_table.get_selected_classes()
-    sly.logger.info(f"Detection model classes: {str(det_model_data['det_model_classes'])}")
+    # sly.logger.info(f"Detection model classes: {str(det_model_data['det_model_classes'])}")
     n_det_classes = len(det_model_data["det_model_classes"])
     select_det_classes_button.hide()
     if n_det_classes > 1:
@@ -763,7 +771,7 @@ def select_det_classes():
     det_classes_collection = [cls["title"] for cls in det_model_data["det_model_meta"].to_json()["classes"]]
     det_classes_to_delete = [cls for cls in det_classes_collection if cls not in det_model_data["det_model_classes"]]
     det_model_data["det_model_meta"] = det_model_data["det_model_meta"].delete_obj_classes(det_classes_to_delete)
-    sly.logger.info(f"Updated detection model meta: {str(det_model_data['det_model_meta'].to_json())}")
+    # sly.logger.info(f"Updated detection model meta: {str(det_model_data['det_model_meta'].to_json())}")
     # get detection custom inference settings
     det_inference_settings = api.task.send_request(
         det_model_data["det_session_id"],
@@ -787,7 +795,7 @@ def select_det_classes():
     preview_project_meta = preview_project_meta.merge(det_model_data["det_model_meta"])
     # define images info
     images_info = []
-    for dataset_info in api.dataset.get_list(project_id):
+    for dataset_info in api.dataset.get_list(project_id, recursive=True):
         if dataset_ids and dataset_info != [None]:
             if dataset_info.id not in dataset_ids:
                 continue
@@ -963,7 +971,7 @@ def select_pose_classes():
     if select_det_method.get_value() == "use existing bounding boxes if images are already labeled with bounding boxes":
         preview_project_meta = project_meta
         images_info = []
-        for dataset_info in api.dataset.get_list(project_id):
+        for dataset_info in api.dataset.get_list(project_id, recursive=True):
             if dataset_ids and dataset_info != [None]:
                 if dataset_info.id not in dataset_ids:
                     continue
@@ -1071,7 +1079,7 @@ def apply_models_to_project():
     else:
         meta_with_det = project_meta
         images_info = []
-        for dataset_info in api.dataset.get_list(project_id):
+        for dataset_info in api.dataset.get_list(project_id, recursive=True):
             if dataset_ids and dataset_info != [None]:
                 if dataset_info.id not in dataset_ids:
                     continue
@@ -1088,11 +1096,23 @@ def apply_models_to_project():
     pose_inference_settings = pose_model_data["pose_inference_settings"]
     # get datasets info
     datasets_info = {}
-    for dataset_info in api.dataset.get_list(project_id):
+    for parents, dataset_info in api.dataset.tree(project_id):
         if dataset_ids and dataset_info != [None]:
             if dataset_info.id not in dataset_ids:
                 continue
-        dataset_dir = os.path.join(g.output_project_dir, dataset_info.name)
+        if parents:
+            # For nested datasets, we need to add "datasets" folder between each level.
+            path_parts = [g.output_project_dir]
+            for i, parent in enumerate(parents):
+                path_parts.append(parent)
+                if i < len(parents) - 1:  # Don't add "datasets" after the last parent.
+                    path_parts.append("datasets")
+            path_parts.extend(["datasets", dataset_info.name])
+            dataset_dir = os.path.join(*path_parts)
+        else:
+            # For root level datasets
+            dataset_dir = os.path.join(g.output_project_dir, dataset_info.name)
+        sly.logger.debug(f"Dataset dir: {dataset_dir}")
         datasets_info[dataset_info.id] = sly.Dataset(dataset_dir, mode=sly.OpenMode.READ)
     # apply models to project
     with apply_progress_bar(message="Applying models to project...", total=len(images_info)) as pbar:
