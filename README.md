@@ -12,7 +12,7 @@
 </p>
 
 
-[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](../../../../supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervisely.com/apps/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
 [![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervisely.com/slack)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project)
 [![views](https://app.supervisely.com/img/badges/views/supervisely-ecosystem/apply-det-and-pose-estim-models-to-project.png)](https://supervisely.com)
