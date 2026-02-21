@@ -84,8 +84,9 @@ sly.logger.info(f"App root directory: {g.app_root_directory}")
 os.makedirs(g.static_dir, exist_ok=True)
 sly.io.fs.clean_dir(g.static_dir)
 # dictionaries for storing detection and pose estimation model data
-det_model_data = {}
+det_model_data = {"det_inference_settings": {}}
 pose_model_data = {}
+preview_project_meta = project_meta
 
 
 ### 1. Dataset selection
